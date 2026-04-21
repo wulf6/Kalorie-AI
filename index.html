@@ -172,7 +172,7 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
 </div>
 
 <!-- ── ADD SHEET ── -->
-<div id="add-sheet" style="display:none" class="modal-overlay" onclick="closeAdd()">
+<div id="add-sheet" style="display:none" class="modal-overlay" onclick="if(event.target===this)closeAdd()">
   <div class="sheet" onclick="event.stopPropagation()">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0">
       <div style="font-size:16px;font-weight:700;color:var(--text)">Přidat jídlo</div>
@@ -286,7 +286,7 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
           <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">PŘIDAT SUROVINU</div>
           <input id="editor-ing-name" class="inp" placeholder="Název suroviny…" oninput="onEditorIngInput()" onkeydown="onEditorIngKey(event)" autocomplete="off" style="margin-bottom:8px"/>
           <!-- suggest jako fixed overlay -->
-          <div id="editor-ing-suggest" style="display:none;position:fixed;left:16px;right:16px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:9999;max-height:200px;overflow-y:auto"></div>
+          <div id="editor-ing-suggest" style="display:none;position:fixed;left:16px;right:16px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:9999;max-height:200px;overflow-y:auto" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"></div>
           <div style="display:flex;gap:8px">
             <input id="editor-ing-g" class="inp" type="number" value="100" min="1" style="flex:1"/>
             <span style="display:flex;align-items:center;color:var(--muted);font-size:13px;flex-shrink:0">g/ml</span>
@@ -1145,6 +1145,7 @@ function onInlineIngInput(inp, entryId){
   sug.querySelectorAll("[data-idx]").forEach(el=>{
     el.addEventListener("mousedown", ev=>{
       ev.preventDefault();
+      ev.stopPropagation();
       const entry = (_inlineMatches[entryId]||[])[+el.dataset.idx];
       if(!entry) return;
       const nameInp = document.getElementById("add-ing-name-"+entryId);
@@ -1418,7 +1419,7 @@ function onEditorIngInput(){
       <span>${e[0]}</span><span style="color:var(--muted);font-size:11px">${e[1]} kcal/100g</span>
     </div>`).join("");
   sug.querySelectorAll("[data-idx]").forEach(el=>{
-    el.addEventListener("mousedown",ev=>{ ev.preventDefault(); selectEditorIng(_editorMatches[+el.dataset.idx]); });
+    el.addEventListener("mousedown",ev=>{ ev.preventDefault(); ev.stopPropagation(); selectEditorIng(_editorMatches[+el.dataset.idx]); });
   });
   sug.style.display="block";
 }
@@ -1660,7 +1661,7 @@ function onManualInput(){
     </div>`).join("");
   sug.querySelectorAll("[data-idx]").forEach(el=>{
     el.addEventListener("mousedown", ev=>{
-      ev.preventDefault();
+      ev.preventDefault(); ev.stopPropagation();
       selectManualSug(_manualMatches[+el.dataset.idx]);
     });
   });
@@ -1832,7 +1833,7 @@ function onRecInput(){
       <span>${e[0]}</span><span style="color:var(--muted);font-size:11px">${e[1]} kcal/100g</span>
     </div>`).join("");
   sug.querySelectorAll("[data-idx]").forEach(el=>{
-    el.addEventListener("mousedown", ev=>{ ev.preventDefault(); selectRecSug(_recMatches[+el.dataset.idx]); });
+    el.addEventListener("mousedown", ev=>{ ev.preventDefault(); ev.stopPropagation(); selectRecSug(_recMatches[+el.dataset.idx]); });
   });
   sug.style.display="block";
 }
