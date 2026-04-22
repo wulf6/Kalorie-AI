@@ -210,48 +210,22 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
 
 <script>
 // ======================== TYPICKÉ GRAMÁŽE (ROZŠÍŘENÉ) ========================
-// Slovník klíčových slov a jejich typické porce (g/ml)
 const TYPICAL_G = {
-  // Pečivo
-  "rohlik": 43, "rohlík": 43, "houska": 50, "chleb": 30, "chléb": 30, "bageta": 60, "toust": 30, "toast": 30,
-  "kaiserka": 50, "croissant": 50, "donut": 60, "perník": 50,
-  // Maso a uzeniny
-  "sunka": 20, "šunka": 20, "sunka": 20, "šunka": 20, "salám": 30, "párek": 50, "klobása": 70,
-  "kureci prsa": 150, "kuřecí prsa": 150, "kureci prso": 150, "kureci rizek": 150, "veprova": 150, "vepřová": 150,
-  "vejce": 55, "vajíčko": 55, "vajicko": 55,
-  // Mléčné výrobky
-  "mleko": 250, "mléko": 250, "jogurt": 150, "tvaroh": 150, "syr": 30, "sýr": 30, "eidam": 30, "gouda": 30,
-  "cottage": 150, "ricotta": 100, "mascarpone": 50, "smetana": 30,
-  // Ovoce
-  "banan": 118, "banán": 118, "jablko": 150, "pomeranc": 200, "pomeranč": 200, "mandarinka": 80, "hruška": 150,
-  "jahoda": 100, "jahody": 100, "borůvka": 100, "borůvky": 100, "malina": 100, "maliny": 100, "višeň": 100,
-  "třešeň": 100, "kiwi": 100, "mango": 150, "ananas": 100, "melon": 200,
-  // Zelenina
-  "mrkev": 80, "okurka": 100, "rajče": 100, "rajčata": 100, "paprika": 100, "brambory": 200, "brambor": 200,
-  "cibule": 50, "cesnek": 10, "česnek": 10, "salát": 50, "spenat": 100, "špenát": 100, "brokolice": 100,
-  "květák": 100, "cuketa": 100, "dýně": 100, "ředkev": 50,
-  // Luštěniny a obiloviny
-  "ryze": 150, "rýže": 150, "testoviny": 150, "těstoviny": 150, "bramborova kase": 150, "bramborová kaše": 150,
-  "knedlik": 150, "knedlík": 150, "ovesne vlocky": 60, "ovesné vločky": 60, "cerealie": 50,
-  // Tekutiny
-  "voda": 250, "kava": 200, "káva": 200, "caj": 250, "čaj": 250, "pivo": 500, "vino": 150, "víno": 150,
-  "cola": 330, "dzus": 250, "džus": 250, "smoothie": 300,
-  // Tuky a pomazánky
-  "maslo": 10, "máslo": 10, "olej": 10, "majoneza": 15, "majonéza": 15, "kečup": 20, "horcice": 10, "hořčice": 10,
-  // Ostatní
-  "cokolada": 40, "čokoláda": 40, "cukr": 10, "med": 15, "orechy": 30, "ořechy": 30, "mandle": 30, "kešu": 30,
-  "arašidy": 30, "chia": 20, "semínka": 20, "avokado": 100, "avokádo": 100,
-  // Polévky
-  "polevka": 300, "polévka": 300, "vývar": 300
+  "rohlik":43,"rohlík":43,"houska":50,"chleb":50,"chléb":50,"bageta":60,"toust":30,"toast":30,"kaiserka":50,"croissant":50,"donut":60,"perník":50,"loupak":60,"loupák":60,"žemle":50,"bulka":50,"veka":50,"dalamánek":50,"preclík":50,"bagel":80,"pizza":150,"tortilla":50,"wrap":100,"pita":80,"nákyp":150,"knedlik":120,"knedlík":120,"houskový knedlík":120,"bramborový knedlík":120,"karlovarský knedlík":120,"bramborák":100,"bramborová placka":100,"lokše":100,
+  "sunka":20,"šunka":20,"salám":30,"párek":50,"klobása":70,"kureci prsa":150,"kuřecí prsa":150,"kureci prso":150,"kureci rizek":150,"veprova":150,"vepřová":150,"veprove maso":150,"hovězí":150,"losos":150,"treska":150,"tuňák":150,"sardinka":80,"ryba":150,"kure":150,"kachna":150,"kruta":150,"kralik":150,"vejce":55,"vajíčko":55,"vajicko":55,"vajecny bílek":40,"vajecny žloutek":20,"škvarky":20,"slanina":20,"anglická slanina":20,"párek v rohlíku":150,"hot dog":150,"burger":200,"hamburger":200,"cheeseburger":200,"kebab":250,"gyros":250,"špekáček":80,"vuřt":80,"buřt":80,"jitrnice":100,"jelito":100,"prejt":100,"tlačenka":80,"huspenina":80,
+  "mleko":250,"mléko":250,"jogurt":150,"tvaroh":150,"cottage":150,"cottage cheese":150,"cottage sýr":150,"syr":30,"sýr":30,"eidam":30,"gouda":30,"ricotta":100,"mascarpone":50,"smetana":30,"zakysana smetana":30,"kefír":250,"kefírové mléko":250,"podmáslí":250,"hermelín":50,"niva":30,"tvarůžky":20,"mozzarella":100,"parmazán":20,"sýr na pánev":100,"tavený sýr":30,"skyr":150,"yogurt":150,"activia":150,"actimel":100,"zakysanka":150,"ayran":250,"žervé":30,"lučina":30,"pomazánkové máslo":20,
+  "banan":118,"banán":118,"jablko":150,"pomeranc":200,"pomeranč":200,"mandarinka":80,"hruška":150,"jahoda":100,"jahody":100,"borůvka":100,"borůvky":100,"malina":100,"maliny":100,"višeň":100,"třešeň":100,"kiwi":100,"mango":150,"ananas":100,"melon":200,"vodni meloun":300,"hrozny":150,"hroznové víno":150,"broskev":120,"meruňka":80,"švestka":80,"rybíz":100,"ostružina":100,"grep":150,"citron":50,"limeta":50,"avokado":100,"avokádo":100,"papája":150,"kaki":100,"tomel":100,"fíky":80,"datle":30,"rozinky":20,
+  "mrkev":80,"okurka":100,"rajče":100,"rajčata":100,"paprika":100,"brambory":200,"brambor":200,"cibule":50,"cesnek":10,"česnek":10,"salát":50,"spenat":100,"špenát":100,"brokolice":100,"květák":100,"cuketa":100,"dýně":100,"ředkev":50,"celer":50,"petržel":20,"koren":10,"cibulka":20,"porek":50,"lilek":100,"batát":150,"kysané zelí":100,"kvašená zelenina":100,"kimchi":100,"zeleninová směs":100,"mražená zelenina":100,"červená řepa":100,"ředkvička":30,"kedlubna":100,"artyčok":100,"chřest":100,"fazole":100,"hrášek":100,"kukuřice":100,"cukrová kukuřice":100,
+  "ryze":150,"rýže":150,"testoviny":150,"těstoviny":150,"bramborova kase":150,"bramborová kaše":150,"ovesne vlocky":60,"ovesné vločky":60,"cerealie":50,"müsli":50,"granola":50,"kuskus":150,"bulgur":150,"quinoa":150,"pohanka":150,"jáhly":150,"cizrna":150,"cocka":150,"čočka":150,"fazole":150,"hrách":150,"sojové boby":100,"edamame":100,"tofu":100,"tempeh":100,"seitan":100,"mungo":100,
+  "voda":250,"kava":200,"káva":200,"caj":250,"čaj":250,"pivo":500,"vino":150,"víno":150,"cola":330,"dzus":250,"džus":250,"smoothie":300,"mineralka":250,"limonáda":330,"energetický nápoj":250,"iontový nápoj":250,"koktejl":250,"kombucha":250,"kvas":250,"cidre":250,"radler":500,"nealko pivo":500,"mléčný koktejl":300,"proteinový nápoj":300,"kakao":250,"horká čokoláda":250,"bylinný nápoj":250,"zázvorový nápoj":250,"ovocný nápoj":250,"čajový nápoj":250,"kávový nápoj":250,"tonik":330,"ginger ale":330,"bitters":100,"vermut":100,"aperitiv":100,"destilát":50,"rum":50,"vodka":50,"gin":50,"whisky":50,"koňak":50,"brandy":50,"calvados":50,"grappa":50,"ouzo":50,"absint":50,
+  "maslo":10,"máslo":10,"olej":10,"majoneza":15,"majonéza":15,"kečup":20,"horcice":10,"hořčice":10,"tatarka":30,"remuláda":30,"dresink":30,"pesto":30,"guacamole":50,"salsa":50,"ajvar":50,"hummus":50,"pomazánka":50,"paštika":50,"nutella":20,"arašídové máslo":20,"džem":20,"marmeláda":20,"med":15,"javorový sirup":15,"cukr":10,"třtinový cukr":10,"sádlo":10,"ghí":10,"kokosový olej":10,
+  "cokolada":40,"čokoláda":40,"orechy":30,"ořechy":30,"mandle":30,"kešu":30,"arasidy":30,"chia":20,"semínka":20,"lněné semínko":20,"dýňová semínka":20,"slunečnicová semínka":20,"protein":30,"whey":30,"syrovatka":30,"proteinová tyčinka":40,"tyčinka":40,"brownie":50,"muffin":60,"cupcake":60,"dort":100,"zákusek":100,"kobliha":70,"sušenka":20,"cookies":20,"keks":20,"zmrzlina":100,"nanuk":80,"puding":150,"dezert":150,"kase":200,"kaše":200,"krupicová kaše":200,"rýžová kaše":200,"polevka":300,"polévka":300,"vývar":300,"kremová polévka":250,"hranolky":150,"bramborové hranolky":150,"brambůrky":30,"chipsy":30,"popcorn":30,"křupky":30,"tyčinky slané":30,"preclíky":30,"krekry":30,"slané tyčinky":30,"sůl":1,"pepř":1,"bylinky":2,"zázvor":10,"olivy":30,"kapary":10,"kyselé okurky":30,"nori":5,"mořské řasy":5,"matcha":2,"zelený čaj":250,"černý čaj":250,"bylinný čaj":250,"espresso":30,"cappuccino":200,"latte":200,"macchiato":150,"prosecco":150,"sekt":150,"aperol":200,"vinný střik":200
 };
 
-// Rozšířená funkce pro získání typické gramáže podle názvu (částečná shoda)
+// Funkce pro získání typické gramáže podle názvu (částečná shoda)
 function getTypicalGrams(name) {
   if (!name) return 100;
-  const normalized = normKey(name);
-  // 1. Přesná shoda
-  if (TYPICAL_G[normalized]) return TYPICAL_G[normalized];
-  // 2. Částečná shoda (nejdelší možná)
+  const normalized = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   let bestMatch = null;
   let bestLength = 0;
   for (let key in TYPICAL_G) {
@@ -262,16 +236,12 @@ function getTypicalGrams(name) {
       }
     }
   }
-  if (bestMatch) return bestMatch;
-  // 3. Výchozí 100g
-  return 100;
+  return bestMatch !== null ? bestMatch : 100;
 }
 
 // ======================== DATABÁZE ========================
-// Zde je tvá databáze v CSV formátu převedená do JSON (ukázka, plná verze je v tvém souboru)
 const FOOD_DB = {};
 
-// Načtení databáze z GitHubu nebo použití vestavěné
 async function loadFoodDB() {
   const dbUrl = "db.json";
   try {
@@ -279,8 +249,7 @@ async function loadFoodDB() {
     const cacheTime = localStorage.getItem("food_db_cache_time");
     const oneDay = 24 * 60 * 60 * 1000;
     if (cached && cacheTime && (Date.now() - parseInt(cacheTime)) < oneDay) {
-      const data = JSON.parse(cached);
-      Object.assign(FOOD_DB, data);
+      Object.assign(FOOD_DB, JSON.parse(cached));
       console.log("✅ Databáze načtena z cache,", Object.keys(FOOD_DB).length, "položek");
       return;
     }
@@ -298,7 +267,6 @@ async function loadFoodDB() {
   } catch(e) {
     console.warn("❌ Nelze načíst db.json:", e.message);
   }
-  // Fallback (základní položky)
   console.log("📦 Používám vestavěnou základní databázi");
   Object.assign(FOOD_DB, {
     "banan": ["Banán", 94, 1.2, 22, 0.2, 2],
@@ -320,7 +288,7 @@ const SLOTS=["Snídaně","Svačina","Oběd","Svačina 2","Večeře"];
 const GEMINI_PROMPT=`Odpověz POUZE tímto JSON: {"jidlo":"Název","porce_g":100,"kcal":100,"b":10,"s":10,"t":5,"vl":2}`;
 const WATER_WORDS=["voda","caj","kava","pivo","vino","mleko","cola","dzus","smoothie","džus"];
 function isLiquid(name){ return WATER_WORDS.some(w=>normKey(name).includes(w)); }
-function normKey(s){ return s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g,""); }
+function normKey(s){ return s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,""); }
 function lookupLocal(q){ const k=normKey(q); if(FOOD_DB[k]) return FOOD_DB[k]; const found=Object.entries(FOOD_DB).find(([key])=>key.includes(k)); return found?found[1]:null; }
 function makeEntry(entry,grams){ const [name,k100,b100,s100,t100,vl100]=entry; const g=grams||100, r=g/100; return {jidlo:name,porce_g:g,kcal:k100*r,b:b100*r,s:s100*r,t:t100*r,vl:vl100*r,source:"ai"}; }
 const TODAY=()=>new Date().toISOString().slice(0,10);
