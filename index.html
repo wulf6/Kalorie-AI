@@ -173,33 +173,6 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
   </div>
 </div>
 
-<!-- ── MACRO DETAIL MODAL ── -->
-<div id="macro-modal" style="display:none" class="modal-overlay" onclick="closeMacroModal()">
-  <div class="sheet" onclick="event.stopPropagation()" style="height:auto;max-height:70vh;padding:24px 20px 28px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div id="macro-icon" style="font-size:28px"></div>
-        <div>
-          <div id="macro-name" style="font-size:18px;font-weight:800;color:var(--text)"></div>
-          <div id="macro-sub" style="font-size:12px;color:var(--muted)"></div>
-        </div>
-      </div>
-      <button onclick="closeMacroModal()" style="background:var(--surface);border:none;border-radius:8px;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 10px;line-height:1">×</button>
-    </div>
-    <!-- Ring velký -->
-    <div style="display:flex;justify-content:center;margin-bottom:18px">
-      <div id="macro-ring-big"></div>
-    </div>
-    <!-- Stats -->
-    <div id="macro-stats" style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px"></div>
-    <!-- Zdroje ze dneška -->
-    <div id="macro-sources-wrap" style="display:none">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;letter-spacing:.5px">ZDROJE DNES</div>
-      <div id="macro-sources" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto"></div>
-    </div>
-  </div>
-</div>
-
 <!-- ── ADD SHEET ── -->
 <div id="add-sheet" style="display:none" class="modal-overlay" onclick="if(event.target===this)closeAdd()">
   <div class="sheet" onclick="event.stopPropagation()">
@@ -467,14 +440,13 @@ function totals(){
 }
 
 // ── Ring SVG ─────────────────────────────────────────────────────────────────
-function ring(value, max, color, label, unit, big=false, macroKey=null){
+function ring(value, max, color, label, unit, big=false){
   const r=big?42:34, circ=2*Math.PI*r, pct=Math.min(value/(max||1),1), over=value>max;
   const col = over ? "#ef4444" : color;
   const rem = Math.max(Math.round(max-value),0);
   const sz = big?92:76;
   const valStr = big ? (value>=1000?Math.round(value/10)*10:Math.round(value)).toString() : Math.round(value).toString();
-  const clickAttr = macroKey ? `onclick="openMacroModal('${macroKey}')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent"` : `style="display:flex;flex-direction:column;align-items:center;gap:4px"`;
-  return `<div ${clickAttr}>
+  return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
     <div style="position:relative;width:${sz}px;height:${sz}px">
       <svg width="${sz}" height="${sz}" style="transform:rotate(-90deg)">
         <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${big?9:7}"/>
@@ -490,88 +462,6 @@ function ring(value, max, color, label, unit, big=false, macroKey=null){
     <span style="font-size:${big?10:9}px;font-weight:700;color:var(--muted)">${label}</span>
     <span style="font-size:9px;color:${over?"#ef4444":"#22c55e"}">${over?"+"+Math.round(value-max)+" přes":rem+" zbývá"}</span>
   </div>`;
-}
-
-// ── Macro Modal ───────────────────────────────────────────────────────────────
-const MACRO_META = {
-  b:  { label:"Bílkoviny", icon:"🥩", color:"#3b82f6", key:"b",  unit:"g", desc:"Cíl: 2 g / kg těl. hm.", tip:"Důležité pro svaly, regeneraci a sytost." },
-  s:  { label:"Sacharidy", icon:"🌾", color:"#f59e0b", key:"s",  unit:"g", desc:"Hlavní zdroj energie",    tip:"Preferuj komplexní sacharidy a vlákninu." },
-  t:  { label:"Tuky",      icon:"🥑", color:"#10b981", key:"t",  unit:"g", desc:"Zdravé tuky jsou nutné",  tip:"Důležité pro hormony, vitamíny A/D/E/K." },
-  vl: { label:"Vláknina",  icon:"🥦", color:"#8b5cf6", key:"vl", unit:"g", desc:"Cíl: ≥ 30 g / den",       tip:"Pomáhá trávení a stabilitě hladiny cukru." },
-};
-
-function openMacroModal(key){
-  const m = MACRO_META[key];
-  if(!m) return;
-  const T  = totals();
-  const tg = targets();
-  const value = Math.round(T[key]*10)/10;
-  const max   = key==="b"?tg.protein : key==="s"?tg.sacharidy : key==="t"?tg.tuky : tg.vlaknina;
-  const over  = value > max;
-  const col   = over ? "#ef4444" : m.color;
-  const rem   = Math.max(Math.round((max-value)*10)/10, 0);
-
-  document.getElementById("macro-icon").textContent = m.icon;
-  document.getElementById("macro-name").textContent = m.label;
-  document.getElementById("macro-sub").textContent  = m.desc;
-
-  // Velký ring
-  document.getElementById("macro-ring-big").innerHTML = ring(value, max, m.color, m.label, m.unit, true);
-
-  // Stats
-  const pct = Math.min(Math.round(value/(max||1)*100), 999);
-  document.getElementById("macro-stats").innerHTML = `
-    <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:12px">
-      <span style="color:var(--muted);font-size:13px">Přijato dnes</span>
-      <span style="font-weight:800;color:${col};font-size:15px">${value} ${m.unit}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:12px">
-      <span style="color:var(--muted);font-size:13px">Denní cíl</span>
-      <span style="font-weight:700;font-size:13px">${max} ${m.unit}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:12px">
-      <span style="color:var(--muted);font-size:13px">${over?"Přesaženo o":"Zbývá"}</span>
-      <span style="font-weight:700;font-size:13px;color:${over?"#ef4444":"#22c55e"}">${over?"+"+Math.round((value-max)*10)/10:rem} ${m.unit}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:12px">
-      <span style="color:var(--muted);font-size:13px">Plnění cíle</span>
-      <span style="font-weight:700;font-size:13px;color:${col}">${pct} %</span>
-    </div>
-    <div style="padding:10px 14px;background:rgba(${m.color==='#3b82f6'?'59,130,246':m.color==='#f59e0b'?'245,158,11':m.color==='#10b981'?'16,185,129':'139,92,246'},.08);border-radius:12px;font-size:12px;color:var(--muted);line-height:1.5">
-      💡 ${m.tip}
-    </div>`;
-
-  // Zdroje dnes (položky, které obsahují tento makronutrient)
-  const sources = entries
-    .filter(e => (e[key]||0) > 0)
-    .sort((a,b) => (b[key]||0)-(a[key]||0));
-  const wrap = document.getElementById("macro-sources-wrap");
-  if(sources.length > 0){
-    wrap.style.display = "block";
-    document.getElementById("macro-sources").innerHTML = sources.map(e=>{
-      const val = Math.round((e[key]||0)*10)/10;
-      const barW = Math.min(Math.round(val/max*100),100);
-      return `<div style="padding:8px 12px;background:var(--surface);border-radius:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-size:13px;font-weight:600;color:var(--text)">${e.jidlo}</span>
-          <span style="font-size:12px;font-weight:700;color:${m.color}">${val} ${m.unit}</span>
-        </div>
-        <div style="height:4px;background:var(--track);border-radius:99px;overflow:hidden">
-          <div style="height:100%;width:${barW}%;background:${m.color};border-radius:99px"></div>
-        </div>
-      </div>`;
-    }).join("");
-  } else {
-    wrap.style.display = "none";
-  }
-
-  document.getElementById("macro-modal").style.display = "flex";
-  document.body.style.overflow = "hidden";
-}
-
-function closeMacroModal(){
-  document.getElementById("macro-modal").style.display = "none";
-  document.body.style.overflow = "";
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -681,10 +571,10 @@ function render(){
 
       <!-- Makro rings -->
       <div class="card" style="padding:16px;margin-bottom:12px;display:flex;justify-content:space-around;flex-wrap:wrap;gap:8px;align-items:flex-start">
-        ${ring(T.b,  tg.protein,   "#3b82f6","Bílkoviny","g",false,"b")}
-        ${ring(T.s,  tg.sacharidy, "#f59e0b","Sacharidy","g",false,"s")}
-        ${ring(T.t,  tg.tuky,      "#10b981","Tuky","g",false,"t")}
-        ${ring(T.vl, tg.vlaknina,  "#8b5cf6","Vláknina","g",false,"vl")}
+        ${ring(T.b,  tg.protein,   "#3b82f6","Bílkoviny","g")}
+        ${ring(T.s,  tg.sacharidy, "#f59e0b","Sacharidy","g")}
+        ${ring(T.t,  tg.tuky,      "#10b981","Tuky","g")}
+        ${ring(T.vl, tg.vlaknina,  "#8b5cf6","Vláknina","g")}
       </div>
 
       <!-- Voda -->
@@ -1315,35 +1205,16 @@ let _inlineMatches = {};
 
 function onInlineIngInput(inp, entryId){
   const q = normKey(inp.value);
-  const sug = document.getElementById("inline-sug-"+entryId);
-  if(!sug) return;
-  if(q.length < 2){ sug.style.display="none"; return; }
+  if(q.length < 2){ hideGlobalSuggest(); return; }
   const matches = Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,8).map(([,e])=>e);
-  _inlineMatches[entryId] = matches;
-  if(!matches.length){ sug.style.display="none"; return; }
-  sug.innerHTML = matches.map((e,i)=>`
-    <div data-idx="${i}" data-eid="${entryId}"
-      style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px"
-      onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
-      <span>${e[0]}</span>
-      <span style="color:var(--muted);font-size:11px">${e[1]} kcal/100g</span>
-    </div>`).join("");
-  sug.querySelectorAll("[data-idx]").forEach(el=>{
-    el.addEventListener("mousedown", ev=>{
-      ev.preventDefault();
-      ev.stopPropagation();
-      const entry = (_inlineMatches[entryId]||[])[+el.dataset.idx];
-      if(!entry) return;
-      const nameInp = document.getElementById("add-ing-name-"+entryId);
-      const gInp = document.getElementById("add-ing-g-"+entryId);
-      if(nameInp) nameInp.value = entry[0];
-      if(gInp) gInp.value = isLiquid(entry[0]) ? 250 : 100;
-      sug.style.display="none";
-    });
+  showGlobalSuggest(inp, matches, (entry) => {
+    const nameInp = document.getElementById("add-ing-name-"+entryId);
+    const gInp = document.getElementById("add-ing-g-"+entryId);
+    if(nameInp) nameInp.value = entry[0];
+    if(gInp) gInp.value = getTypicalGrams(entry[0]);
+    hideGlobalSuggest();
   });
-  sug.style.display="block";
 }
-
 function hideInlineSug(entryId){
   const sug = document.getElementById("inline-sug-"+entryId);
   if(sug) sug.style.display="none";
@@ -1613,29 +1484,10 @@ function removeEditorIng(id){
 function onEditorIngInput(){
   const inp = document.getElementById("editor-ing-name");
   const q = normKey(inp.value);
-  const sug = document.getElementById("editor-ing-suggest");
-  if(!sug) return;
-  if(q.length<2){ sug.style.display="none"; _editorMatches=[]; return; }
+  if(q.length < 2){ hideGlobalSuggest(); _editorMatches=[]; return; }
   _editorMatches = Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,8).map(([,e])=>e);
-  if(!_editorMatches.length){ sug.style.display="none"; return; }
-  // Nastav pozici suggest box pod input polem
-  const rect = inp.getBoundingClientRect();
-  sug.style.top = (rect.bottom + window.scrollY + 4) + "px";
-  sug.style.left = "16px";
-  sug.style.right = "16px";
-  sug.innerHTML = _editorMatches.map((e,i)=>`
-    <div data-idx="${i}" style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:8px"
-      onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
-      <span style="flex:1;text-align:center;font-weight:500">${e[0]}</span><span style="color:var(--muted);font-size:11px;flex-shrink:0">${e[1]} kcal/100g</span>
-    </div>`).join("");
-  sug.querySelectorAll("[data-idx]").forEach(el=>{
-    const pick = ev=>{ ev.preventDefault(); ev.stopPropagation(); selectEditorIng(_editorMatches[+el.dataset.idx]); };
-    el.addEventListener("mousedown", pick);
-    el.addEventListener("touchstart", pick, {passive:false});
-  });
-  sug.style.display="block";
+  showGlobalSuggest(inp, _editorMatches, (entry) => selectEditorIng(entry));
 }
-
 function selectEditorIng(entry){
   document.getElementById("editor-ing-name").value = entry[0];
   document.getElementById("editor-ing-g").value = isLiquid(entry[0])?250:100;
@@ -1706,41 +1558,24 @@ function setToast(msg){
 let _aiMatches = [];
 
 function onAiInput(){
-  const val = document.getElementById("ai-input").value;
-  const q = normKey(val);
-  const sug = document.getElementById("ai-suggest");
-  
-  // Automaticky nastavit gramáž i bez výběru ze seznamu (pro AI)
-  const gInp = document.getElementById("ai-g");
-  if(gInp){
-    const tg = getTypicalGrams(val);
-    if(tg !== 100) gInp.value = tg;
-  }
-
-  if(q.length < 2){ sug.style.display="none"; _aiMatches=[]; return; }
-  _aiMatches = Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,8).map(([,e])=>e);
-  if(!_aiMatches.length){ sug.style.display="none"; return; }
-  sug.innerHTML = _aiMatches.map((e,i)=>`
-    <div data-idx="${i}"
-      style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:8px"
-      onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
-      <span style="flex:1;text-align:center;font-weight:500">${e[0]}</span>
-      <span style="color:var(--muted);font-size:11px;flex-shrink:0">${e[1]} kcal/100g</span>
-    </div>`).join("");
-  sug.querySelectorAll("[data-idx]").forEach(el=>{
-    const pick = ev=>{ ev.preventDefault(); ev.stopPropagation(); selectSug(_aiMatches[+el.dataset.idx]); };
-    el.addEventListener("mousedown", pick);
-    el.addEventListener("touchstart", pick, {passive:false});
+  const inp = document.getElementById("ai-input");
+  const q = normKey(inp.value);
+  if(q.length < 2){ hideGlobalSuggest(); return; }
+  const matches = Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,8).map(([,e])=>e);
+  showGlobalSuggest(inp, matches, (entry) => {
+    inp.value = entry[0];
+    hideGlobalSuggest();
+    const gInp = document.getElementById("ai-g");
+    if(gInp){ const tg = getTypicalGrams(entry[0]); gInp.value = tg; }
   });
-  sug.style.display="block";
 }
 function onAiKey(ev){
   if(ev.key==="Enter"&&!ev.shiftKey){ ev.preventDefault(); handleDB(); }
-  if(ev.key==="Escape") document.getElementById("ai-suggest").style.display="none";
+  if(ev.key==="Escape") hideGlobalSuggest();
 }
 function selectSug(entry){
   document.getElementById("ai-input").value = entry[0];
-  document.getElementById("ai-suggest").style.display="none";
+  hideGlobalSuggest();
   // Nastav typickou gramáž
   const gInp = document.getElementById("ai-g");
   if(gInp){ const tg = getTypicalGrams(entry[0]); if(tg!==100) gInp.value = tg; }
@@ -1753,7 +1588,7 @@ function handleDB(){
   if(found){
     addEntry(makeEntry(found, g));
     document.getElementById("ai-input").value="";
-    document.getElementById("ai-suggest").style.display="none";
+    hideGlobalSuggest();
     showOk(found[0]+" přidáno ("+Math.round(found[1]*g/100)+" kcal)");
     setTimeout(closeAdd,1200);
   } else {
@@ -1958,33 +1793,20 @@ let _manualEntry = null; // uložená DB položka na 100g
 let _manualMatches = [];
 
 function onManualInput(){
-  const q = normKey(document.getElementById("m-name").value);
-  const sug = document.getElementById("m-suggest");
+  const inp = document.getElementById("m-name");
+  const q = normKey(inp.value);
   _manualEntry = null;
   document.getElementById("m-autofill-info").style.display="none";
-  checkLiquidMode(document.getElementById("m-name").value);
-  if(q.length < 2){ sug.style.display="none"; _manualMatches=[]; return; }
+  checkLiquidMode(inp.value);
+  if(q.length < 2){ hideGlobalSuggest(); _manualMatches=[]; return; }
   _manualMatches = Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,8).map(([,e])=>e);
-  if(!_manualMatches.length){ sug.style.display="none"; return; }
-  sug.innerHTML = _manualMatches.map((e,i)=>`
-    <div data-idx="${i}"
-      style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:8px"
-      onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
-      <span style="flex:1;text-align:center;font-weight:500">${e[0]}</span>
-      <span style="color:var(--muted);font-size:11px;flex-shrink:0">${e[1]} kcal/100g</span>
-    </div>`).join("");
-  sug.querySelectorAll("[data-idx]").forEach(el=>{
-    const pick = ev=>{ ev.preventDefault(); ev.stopPropagation(); selectManualSug(_manualMatches[+el.dataset.idx]); };
-    el.addEventListener("mousedown", pick);
-    el.addEventListener("touchstart", pick, {passive:false});
-  });
-  sug.style.display="block";
+  showGlobalSuggest(inp, _manualMatches, (entry) => selectManualSug(entry));
 }
 
 function selectManualSug(entry){
   _manualEntry = entry;
   document.getElementById("m-name").value = entry[0];
-  document.getElementById("m-suggest").style.display="none";
+  hideGlobalSuggest();
   checkLiquidMode(entry[0]);
   // Nastav typickou gramáž
   const gInp = document.getElementById("m-g");
@@ -2025,7 +1847,8 @@ function onManualGrams(){
 }
 
 function onManualKey(ev){
-  if(ev.key==="Escape") document.getElementById("m-suggest").style.display="none";
+  if(ev.key==="Escape") hideGlobalSuggest();
+  if(ev.key==="Enter"){ ev.preventDefault(); hideGlobalSuggest(); handleManual(); }
 }
 
 // ── Manual ────────────────────────────────────────────────────────────────────
@@ -2244,25 +2067,12 @@ async function startQuagga(){
 let _recMatches = [];
 
 function onRecInput(){
-  const q = normKey(document.getElementById("rec-name").value);
-  const sug = document.getElementById("rec-suggest");
-  if(!sug) return;
-  if(q.length < 2){ sug.style.display="none"; _recMatches=[]; return; }
+  const inp = document.getElementById("rec-name");
+  const q = normKey(inp.value);
+  if(q.length < 2){ hideGlobalSuggest(); _recMatches=[]; return; }
   _recMatches = Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,8).map(([,e])=>e);
-  if(!_recMatches.length){ sug.style.display="none"; return; }
-  sug.innerHTML = _recMatches.map((e,i)=>`
-    <div data-idx="${i}" style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:8px"
-      onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
-      <span style="flex:1;text-align:center;font-weight:500">${e[0]}</span><span style="color:var(--muted);font-size:11px;flex-shrink:0">${e[1]} kcal/100g</span>
-    </div>`).join("");
-  sug.querySelectorAll("[data-idx]").forEach(el=>{
-    const pick = ev=>{ ev.preventDefault(); ev.stopPropagation(); selectRecSug(_recMatches[+el.dataset.idx]); };
-    el.addEventListener("mousedown", pick);
-    el.addEventListener("touchstart", pick, {passive:false});
-  });
-  sug.style.display="block";
+  showGlobalSuggest(inp, _recMatches, (entry) => selectRecSug(entry));
 }
-
 function onRecKey(ev){
   if(ev.key==="Enter"){ ev.preventDefault(); addRecipeItem(); }
   if(ev.key==="Escape"){ const s=document.getElementById("rec-suggest"); if(s)s.style.display="none"; }
@@ -2519,6 +2329,59 @@ setInterval(()=>{
 }, 60000);
 window._lastDay = TODAY();
 
+// ── Globální suggest overlay ──────────────────────────────────────────────────
+let _gSugCallback = null;
+
+function showGlobalSuggest(inputEl, items, onSelect){
+  const sug = document.getElementById("g-suggest");
+  if(!sug || !items.length){ hideGlobalSuggest(); return; }
+  
+  // Pozice pod input polem
+  const rect = inputEl.getBoundingClientRect();
+  const top = rect.bottom + 4;
+  const maxH = window.innerHeight - top - 16;
+  sug.style.top = top + "px";
+  sug.style.maxHeight = Math.min(220, maxH) + "px";
+  
+  sug.innerHTML = items.map((e,i) => `
+    <div data-idx="${i}"
+      style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:14px;-webkit-tap-highlight-color:transparent"
+      ontouchstart="this.style.background='var(--surface)'" ontouchend="this.style.background=''"
+      onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
+      <span style="font-weight:500">${e[0]}</span>
+      <span style="color:var(--muted);font-size:12px">${e[1]} kcal/100g</span>
+    </div>`).join("");
+  
+  sug.querySelectorAll("[data-idx]").forEach(el => {
+    const handler = (ev) => {
+      ev.preventDefault(); ev.stopPropagation();
+      hideGlobalSuggest();
+      onSelect(items[+el.dataset.idx]);
+    };
+    el.addEventListener("touchend", handler, {passive:false});
+    el.addEventListener("mousedown", handler);
+  });
+  
+  sug.style.display = "block";
+  _gSugCallback = onSelect;
+}
+
+function hideGlobalSuggest(){
+  const sug = document.getElementById("g-suggest");
+  if(sug) sug.style.display = "none";
+  _gSugCallback = null;
+}
+
+// Skryj suggest při kliknutí mimo
+document.addEventListener("touchstart", e => {
+  const sug = document.getElementById("g-suggest");
+  if(sug && !sug.contains(e.target)) hideGlobalSuggest();
+}, {passive:true});
+document.addEventListener("mousedown", e => {
+  const sug = document.getElementById("g-suggest");
+  if(sug && !sug.contains(e.target)) hideGlobalSuggest();
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 if(profile.fontSize) applyFontSize(profile.fontSize);
 loadFoodDB().then(() => render());
@@ -2532,5 +2395,9 @@ if("serviceWorker" in navigator){
   navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
 </script>
+  <!-- Globální suggest overlay pro Android -->
+  <div id="g-suggest" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"
+    style="display:none;position:fixed;left:12px;right:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.25);z-index:10000;max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch">
+  </div>
 </body>
 </html>
