@@ -1624,12 +1624,14 @@ function onEditorIngInput(){
   sug.style.left = "16px";
   sug.style.right = "16px";
   sug.innerHTML = _editorMatches.map((e,i)=>`
-    <div data-idx="${i}" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px"
+    <div data-idx="${i}" style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:8px"
       onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
-      <span>${e[0]}</span><span style="color:var(--muted);font-size:11px">${e[1]} kcal/100g</span>
+      <span style="flex:1;text-align:center;font-weight:500">${e[0]}</span><span style="color:var(--muted);font-size:11px;flex-shrink:0">${e[1]} kcal/100g</span>
     </div>`).join("");
   sug.querySelectorAll("[data-idx]").forEach(el=>{
-    el.addEventListener("mousedown",ev=>{ ev.preventDefault(); ev.stopPropagation(); selectEditorIng(_editorMatches[+el.dataset.idx]); });
+    const pick = ev=>{ ev.preventDefault(); ev.stopPropagation(); selectEditorIng(_editorMatches[+el.dataset.idx]); };
+    el.addEventListener("mousedown", pick);
+    el.addEventListener("touchstart", pick, {passive:false});
   });
   sug.style.display="block";
 }
@@ -1720,16 +1722,15 @@ function onAiInput(){
   if(!_aiMatches.length){ sug.style.display="none"; return; }
   sug.innerHTML = _aiMatches.map((e,i)=>`
     <div data-idx="${i}"
-      style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px"
+      style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:8px"
       onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
-      <span>${e[0]}</span>
-      <span style="color:var(--muted);font-size:11px">${e[1]} kcal/100g</span>
+      <span style="flex:1;text-align:center;font-weight:500">${e[0]}</span>
+      <span style="color:var(--muted);font-size:11px;flex-shrink:0">${e[1]} kcal/100g</span>
     </div>`).join("");
   sug.querySelectorAll("[data-idx]").forEach(el=>{
-    el.addEventListener("mousedown", ev=>{
-      ev.preventDefault();
-      selectSug(_aiMatches[+el.dataset.idx]);
-    });
+    const pick = ev=>{ ev.preventDefault(); ev.stopPropagation(); selectSug(_aiMatches[+el.dataset.idx]); };
+    el.addEventListener("mousedown", pick);
+    el.addEventListener("touchstart", pick, {passive:false});
   });
   sug.style.display="block";
 }
@@ -1967,16 +1968,15 @@ function onManualInput(){
   if(!_manualMatches.length){ sug.style.display="none"; return; }
   sug.innerHTML = _manualMatches.map((e,i)=>`
     <div data-idx="${i}"
-      style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px"
+      style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:8px"
       onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
-      <span>${e[0]}</span>
-      <span style="color:var(--muted);font-size:11px">${e[1]} kcal / 100g</span>
+      <span style="flex:1;text-align:center;font-weight:500">${e[0]}</span>
+      <span style="color:var(--muted);font-size:11px;flex-shrink:0">${e[1]} kcal/100g</span>
     </div>`).join("");
   sug.querySelectorAll("[data-idx]").forEach(el=>{
-    el.addEventListener("mousedown", ev=>{
-      ev.preventDefault(); ev.stopPropagation();
-      selectManualSug(_manualMatches[+el.dataset.idx]);
-    });
+    const pick = ev=>{ ev.preventDefault(); ev.stopPropagation(); selectManualSug(_manualMatches[+el.dataset.idx]); };
+    el.addEventListener("mousedown", pick);
+    el.addEventListener("touchstart", pick, {passive:false});
   });
   sug.style.display="block";
 }
@@ -2251,12 +2251,14 @@ function onRecInput(){
   _recMatches = Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,8).map(([,e])=>e);
   if(!_recMatches.length){ sug.style.display="none"; return; }
   sug.innerHTML = _recMatches.map((e,i)=>`
-    <div data-idx="${i}" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px"
+    <div data-idx="${i}" style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:8px"
       onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
-      <span>${e[0]}</span><span style="color:var(--muted);font-size:11px">${e[1]} kcal/100g</span>
+      <span style="flex:1;text-align:center;font-weight:500">${e[0]}</span><span style="color:var(--muted);font-size:11px;flex-shrink:0">${e[1]} kcal/100g</span>
     </div>`).join("");
   sug.querySelectorAll("[data-idx]").forEach(el=>{
-    el.addEventListener("mousedown", ev=>{ ev.preventDefault(); ev.stopPropagation(); selectRecSug(_recMatches[+el.dataset.idx]); });
+    const pick = ev=>{ ev.preventDefault(); ev.stopPropagation(); selectRecSug(_recMatches[+el.dataset.idx]); };
+    el.addEventListener("mousedown", pick);
+    el.addEventListener("touchstart", pick, {passive:false});
   });
   sug.style.display="block";
 }
