@@ -69,7 +69,6 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s}
 @media (max-height:600px) and (max-width:768px){ .sheet{height:100dvh;max-height:100dvh;border-radius:0} :root{--sheet-radius:0} }
 .fab{padding-bottom:0;bottom:max(var(--fab-bottom),calc(env(safe-area-inset-bottom) + 16px));right:max(20px,calc(env(safe-area-inset-right) + 16px))}
 input:focus,textarea:focus{scroll-margin-bottom:120px}
-/* Modal pro detail makra */
 .macro-detail-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px}
 .macro-detail-card{background:var(--card);border-radius:24px;max-width:500px;width:100%;max-height:80vh;overflow-y:auto;padding:20px;border:1px solid var(--border)}
 </style>
@@ -198,7 +197,6 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
   </div>
 </div>
 
-<!-- Detail makra - modal -->
 <div id="macro-detail-modal" style="display:none" class="macro-detail-modal" onclick="closeMacroDetail()">
   <div class="macro-detail-card" onclick="event.stopPropagation()">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -211,61 +209,58 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
 </div>
 
 <script>
-// ======================== VESTAVĚNÁ DATABÁZE (FALLBACK) ========================
-const FALLBACK_DB = {
-  "banan": ["Banán", 89, 1.1, 23, 0.3, 2.6],
-  "jablko": ["Jablko", 52, 0.3, 14, 0.2, 2.4],
-  "rohlik": ["Rohlík", 280, 8, 50, 5, 2],
-  "chleb": ["Chléb", 265, 8, 49, 3, 6],
-  "kureci prsa": ["Kuřecí prsa", 165, 31, 0, 3.6, 0],
-  "ryze": ["Rýže (bílá vařená)", 130, 2.7, 28, 0.3, 0.4],
-  "brambory": ["Brambory vařené", 87, 1.9, 20, 0.1, 1.8],
-  "vejce": ["Vejce", 155, 13, 1.1, 11, 0],
-  "cokolada": ["Čokoláda mléčná", 546, 7, 59, 31, 3],
-  "pivo": ["Pivo 10°", 42, 0.5, 3.5, 0, 0],
-  "vino bile": ["Víno bílé", 82, 0.1, 2.5, 0, 0],
-  "mleko": ["Mléko 1.5%", 47, 3.3, 4.8, 1.5, 0],
-  "jogurt bily": ["Jogurt bílý", 61, 5, 4.7, 3, 0],
-  "ovesne vlocky": ["Ovesné vločky", 389, 16.9, 66, 6.9, 10.6],
-  "tvaroh": ["Tvaroh polotučný", 121, 12, 3.5, 7, 0],
-  "losos": ["Losos", 208, 20, 0, 13, 0],
-  "avokado": ["Avokádo", 160, 2, 8.5, 14.7, 6.7]
-};
-
+// ======================== DATABÁZE ========================
+// Zde je tvá databáze v CSV formátu převedená do JSON
 const FOOD_DB = {};
 
-// ======================== NAČTENÍ DATABÁZE Z GITHUBU ========================
-async function loadFoodDB(){
-  // Zkusíme načíst z GitHub Pages (uprav URL podle tvého repozitáře)
-  const GITHUB_DB_URL = "db.json"; // stejná složka jako index.html
+// Načtení databáze z GitHubu nebo použití vestavěné
+async function loadFoodDB() {
+  // Nejprve zkusíme načíst z GitHub Pages
+  // Použijeme relativní cestu - db.json musí být ve stejné složce jako index.html
+  const dbUrl = "db.json";
   
   try {
+    // Zkusíme cache
     const cached = localStorage.getItem("food_db_cache");
-    const ver = localStorage.getItem("food_db_ver");
-    if(cached && ver === "1"){
-      Object.assign(FOOD_DB, JSON.parse(cached));
-      console.log("Databáze načtena z cache");
+    const cacheTime = localStorage.getItem("food_db_cache_time");
+    const oneDay = 24 * 60 * 60 * 1000;
+    
+    if (cached && cacheTime && (Date.now() - parseInt(cacheTime)) < oneDay) {
+      const data = JSON.parse(cached);
+      Object.assign(FOOD_DB, data);
+      console.log("✅ Databáze načtena z cache,", Object.keys(FOOD_DB).length, "položek");
       return;
     }
-  } catch(_){}
+  } catch(e) {}
   
   try {
-    const r = await fetch(GITHUB_DB_URL);
-    if(r.ok){
-      const data = await r.json();
+    const response = await fetch(dbUrl + "?t=" + Date.now());
+    if (response.ok) {
+      const data = await response.json();
       Object.assign(FOOD_DB, data);
       localStorage.setItem("food_db_cache", JSON.stringify(data));
-      localStorage.setItem("food_db_ver", "1");
-      console.log("Databáze načtena z GitHubu");
+      localStorage.setItem("food_db_cache_time", Date.now().toString());
+      console.log("✅ Databáze načtena z GitHubu!", Object.keys(FOOD_DB).length, "položek");
       return;
     }
-  } catch(e) { console.warn("GitHub DB selhalo:", e); }
+  } catch(e) {
+    console.warn("❌ Nelze načíst db.json:", e.message);
+  }
   
-  // Fallback na vestavěnou databázi
-  console.log("Používám vestavěnou databázi");
-  Object.assign(FOOD_DB, FALLBACK_DB);
-  localStorage.setItem("food_db_cache", JSON.stringify(FALLBACK_DB));
-  localStorage.setItem("food_db_ver", "1");
+  // Pokud se nepodařilo načíst, použijeme základní vestavěnou databázi
+  console.log("📦 Používám vestavěnou základní databázi");
+  Object.assign(FOOD_DB, {
+    "banan": ["Banán", 94, 1.2, 22, 0.2, 2],
+    "jablko": ["Jablko", 62.7, 0.37, 12.9, 0.4, 3.1],
+    "mrkev": ["Mrkev", 42, 1, 7.3, 0.22, 3.5],
+    "brambory": ["Brambory vařené", 84.5, 1.7, 18.6, 0.1, 1.4],
+    "vejce": ["Vejce", 151, 12.4, 0.94, 10.9, 0],
+    "kureci prsa": ["Kuřecí prsa", 106, 23.1, 0, 1.5, 0],
+    "rohlik": ["Rohlík bílý", 310, 9.8, 57.5, 3.7, 4.5],
+    "chleb": ["Chléb kmínový", 244, 8, 45, 1.1, 4]
+  });
+  localStorage.setItem("food_db_cache", JSON.stringify(FOOD_DB));
+  localStorage.setItem("food_db_cache_time", Date.now().toString());
 }
 
 // ======================== ZBYTEK APLIKACE ========================
@@ -345,9 +340,10 @@ function showMacroDetail(label, type){
     </div>
   `).join("") : '<div style="text-align:center;padding:20px;color:var(--muted)">Žádné záznamy pro dnešek</div>';
   
+  const targetMap = {protein: targets().protein, carbs: targets().sacharidy, fat: targets().tuky, fiber: targets().vlaknina};
   document.getElementById("macro-detail-title").innerHTML = `${label} - Denní přehled`;
   document.getElementById("macro-detail-list").innerHTML = listHtml;
-  document.getElementById("macro-detail-total").innerHTML = `Celkem: ${totalValue.toFixed(1)} g / ${type==='protein'?targets().protein:type==='carbs'?targets().sacharidy:type==='fat'?targets().tuky:targets().vlaknina} g`;
+  document.getElementById("macro-detail-total").innerHTML = `Celkem: ${totalValue.toFixed(1)} g / ${targetMap[type] || 0} g`;
   document.getElementById("macro-detail-modal").style.display = "flex";
 }
 
@@ -473,6 +469,8 @@ function render(){
   document.getElementById("app").innerHTML=html;
   const splash=document.getElementById("splash");
   if(splash&&splash.style.display!=="none"){ splash.style.opacity=0; setTimeout(()=>splash.style.display="none",400); }
+  const keyInp=document.getElementById("gemini-key-inp");
+  if(keyInp&&profile.geminiKey) keyInp.value=profile.geminiKey;
 }
 
 function toggleExpand(id){ expanded.has(id)?expanded.delete(id):expanded.add(id); render(); }
@@ -551,6 +549,13 @@ if("serviceWorker" in navigator){
 // Repeat
 function repeatEntry(id){ const e=entries.find(x=>x.id===id); if(e) addEntry({...e,id:undefined}); }
 function repeatYesterday(idx){ const items=window._ydItems||[]; if(items[idx]) addEntry({...items[idx],id:undefined}); }
+
+// Photo AI
+let _photoBase64=null,_photoMime="image/jpeg";
+function handlePhotoSelect(inp){ const file=inp.files[0]; if(!file) return; loadPhoto(file); }
+function handlePhotoDrop(ev){ const file=ev.dataTransfer.files[0]; if(!file||!file.type.startsWith("image/")) return; loadPhoto(file); }
+function loadPhoto(file){ _photoMime=file.type||"image/jpeg"; const reader=new FileReader(); reader.onload=e=>{ _photoBase64=e.target.result.split(",")[1]; document.getElementById("ai-photo-img").src=e.target.result; document.getElementById("ai-photo-preview").style.display="block"; document.getElementById("ai-photo-placeholder").style.display="none"; document.getElementById("ai-photo-area").style.borderColor="#6366f1"; }; reader.readAsDataURL(file); }
+function clearPhoto(){ _photoBase64=null; document.getElementById("ai-photo-preview").style.display="none"; document.getElementById("ai-photo-placeholder").style.display="block"; document.getElementById("ai-photo-area").style.borderColor=""; document.getElementById("ai-photo-inp").value=""; }
 
 // Start
 if(profile.fontSize) document.documentElement.style.fontSize=profile.fontSize;
