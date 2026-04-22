@@ -209,22 +209,75 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
 </div>
 
 <script>
+// ======================== TYPICKÉ GRAMÁŽE (ROZŠÍŘENÉ) ========================
+// Slovník klíčových slov a jejich typické porce (g/ml)
+const TYPICAL_G = {
+  // Pečivo
+  "rohlik": 43, "rohlík": 43, "houska": 50, "chleb": 30, "chléb": 30, "bageta": 60, "toust": 30, "toast": 30,
+  "kaiserka": 50, "croissant": 50, "donut": 60, "perník": 50,
+  // Maso a uzeniny
+  "sunka": 20, "šunka": 20, "sunka": 20, "šunka": 20, "salám": 30, "párek": 50, "klobása": 70,
+  "kureci prsa": 150, "kuřecí prsa": 150, "kureci prso": 150, "kureci rizek": 150, "veprova": 150, "vepřová": 150,
+  "vejce": 55, "vajíčko": 55, "vajicko": 55,
+  // Mléčné výrobky
+  "mleko": 250, "mléko": 250, "jogurt": 150, "tvaroh": 150, "syr": 30, "sýr": 30, "eidam": 30, "gouda": 30,
+  "cottage": 150, "ricotta": 100, "mascarpone": 50, "smetana": 30,
+  // Ovoce
+  "banan": 118, "banán": 118, "jablko": 150, "pomeranc": 200, "pomeranč": 200, "mandarinka": 80, "hruška": 150,
+  "jahoda": 100, "jahody": 100, "borůvka": 100, "borůvky": 100, "malina": 100, "maliny": 100, "višeň": 100,
+  "třešeň": 100, "kiwi": 100, "mango": 150, "ananas": 100, "melon": 200,
+  // Zelenina
+  "mrkev": 80, "okurka": 100, "rajče": 100, "rajčata": 100, "paprika": 100, "brambory": 200, "brambor": 200,
+  "cibule": 50, "cesnek": 10, "česnek": 10, "salát": 50, "spenat": 100, "špenát": 100, "brokolice": 100,
+  "květák": 100, "cuketa": 100, "dýně": 100, "ředkev": 50,
+  // Luštěniny a obiloviny
+  "ryze": 150, "rýže": 150, "testoviny": 150, "těstoviny": 150, "bramborova kase": 150, "bramborová kaše": 150,
+  "knedlik": 150, "knedlík": 150, "ovesne vlocky": 60, "ovesné vločky": 60, "cerealie": 50,
+  // Tekutiny
+  "voda": 250, "kava": 200, "káva": 200, "caj": 250, "čaj": 250, "pivo": 500, "vino": 150, "víno": 150,
+  "cola": 330, "dzus": 250, "džus": 250, "smoothie": 300,
+  // Tuky a pomazánky
+  "maslo": 10, "máslo": 10, "olej": 10, "majoneza": 15, "majonéza": 15, "kečup": 20, "horcice": 10, "hořčice": 10,
+  // Ostatní
+  "cokolada": 40, "čokoláda": 40, "cukr": 10, "med": 15, "orechy": 30, "ořechy": 30, "mandle": 30, "kešu": 30,
+  "arašidy": 30, "chia": 20, "semínka": 20, "avokado": 100, "avokádo": 100,
+  // Polévky
+  "polevka": 300, "polévka": 300, "vývar": 300
+};
+
+// Rozšířená funkce pro získání typické gramáže podle názvu (částečná shoda)
+function getTypicalGrams(name) {
+  if (!name) return 100;
+  const normalized = normKey(name);
+  // 1. Přesná shoda
+  if (TYPICAL_G[normalized]) return TYPICAL_G[normalized];
+  // 2. Částečná shoda (nejdelší možná)
+  let bestMatch = null;
+  let bestLength = 0;
+  for (let key in TYPICAL_G) {
+    if (normalized.includes(key)) {
+      if (key.length > bestLength) {
+        bestLength = key.length;
+        bestMatch = TYPICAL_G[key];
+      }
+    }
+  }
+  if (bestMatch) return bestMatch;
+  // 3. Výchozí 100g
+  return 100;
+}
+
 // ======================== DATABÁZE ========================
-// Zde je tvá databáze v CSV formátu převedená do JSON
+// Zde je tvá databáze v CSV formátu převedená do JSON (ukázka, plná verze je v tvém souboru)
 const FOOD_DB = {};
 
 // Načtení databáze z GitHubu nebo použití vestavěné
 async function loadFoodDB() {
-  // Nejprve zkusíme načíst z GitHub Pages
-  // Použijeme relativní cestu - db.json musí být ve stejné složce jako index.html
   const dbUrl = "db.json";
-  
   try {
-    // Zkusíme cache
     const cached = localStorage.getItem("food_db_cache");
     const cacheTime = localStorage.getItem("food_db_cache_time");
     const oneDay = 24 * 60 * 60 * 1000;
-    
     if (cached && cacheTime && (Date.now() - parseInt(cacheTime)) < oneDay) {
       const data = JSON.parse(cached);
       Object.assign(FOOD_DB, data);
@@ -232,7 +285,6 @@ async function loadFoodDB() {
       return;
     }
   } catch(e) {}
-  
   try {
     const response = await fetch(dbUrl + "?t=" + Date.now());
     if (response.ok) {
@@ -246,8 +298,7 @@ async function loadFoodDB() {
   } catch(e) {
     console.warn("❌ Nelze načíst db.json:", e.message);
   }
-  
-  // Pokud se nepodařilo načíst, použijeme základní vestavěnou databázi
+  // Fallback (základní položky)
   console.log("📦 Používám vestavěnou základní databázi");
   Object.assign(FOOD_DB, {
     "banan": ["Banán", 94, 1.2, 22, 0.2, 2],
@@ -257,20 +308,19 @@ async function loadFoodDB() {
     "vejce": ["Vejce", 151, 12.4, 0.94, 10.9, 0],
     "kureci prsa": ["Kuřecí prsa", 106, 23.1, 0, 1.5, 0],
     "rohlik": ["Rohlík bílý", 310, 9.8, 57.5, 3.7, 4.5],
-    "chleb": ["Chléb kmínový", 244, 8, 45, 1.1, 4]
+    "chleb": ["Chléb kmínový", 244, 8, 45, 1.1, 4],
+    "sunka": ["Šunka", 118, 19, 0.5, 4.5, 0]
   });
   localStorage.setItem("food_db_cache", JSON.stringify(FOOD_DB));
   localStorage.setItem("food_db_cache_time", Date.now().toString());
 }
 
 // ======================== ZBYTEK APLIKACE ========================
-const TYPICAL_G = {"rohlik":43,"banan":118,"vejce":55,"jablko":150,"pomeranc":200,"chleb":30,"jogurt":150,"mleko":250,"voda":250,"kave":200,"caj":250,"maslo":10,"med":15,"syr":30,"sunka":50,"ryze":150,"brambory":200,"pivo":500,"vino":150,"cola":330,"ovsene":60,"cokolada":40};
-function getTypicalGrams(k){ const kn=normKey(k||""); if(TYPICAL_G[kn]) return TYPICAL_G[kn]; return 100; }
 const SLOTS=["Snídaně","Svačina","Oběd","Svačina 2","Večeře"];
 const GEMINI_PROMPT=`Odpověz POUZE tímto JSON: {"jidlo":"Název","porce_g":100,"kcal":100,"b":10,"s":10,"t":5,"vl":2}`;
-const WATER_WORDS=["voda","caj","kava","pivo","vino","mleko","cola","dzus"];
+const WATER_WORDS=["voda","caj","kava","pivo","vino","mleko","cola","dzus","smoothie","džus"];
 function isLiquid(name){ return WATER_WORDS.some(w=>normKey(name).includes(w)); }
-function normKey(s){ return s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,""); }
+function normKey(s){ return s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g,""); }
 function lookupLocal(q){ const k=normKey(q); if(FOOD_DB[k]) return FOOD_DB[k]; const found=Object.entries(FOOD_DB).find(([key])=>key.includes(k)); return found?found[1]:null; }
 function makeEntry(entry,grams){ const [name,k100,b100,s100,t100,vl100]=entry; const g=grams||100, r=g/100; return {jidlo:name,porce_g:g,kcal:k100*r,b:b100*r,s:s100*r,t:t100*r,vl:vl100*r,source:"ai"}; }
 const TODAY=()=>new Date().toISOString().slice(0,10);
@@ -310,36 +360,15 @@ function showMacroDetail(label, type){
   const T = totals();
   let totalValue = 0;
   let items = [];
-  
   switch(type){
-    case 'protein':
-      totalValue = T.b;
-      items = entries.filter(e => (e.b||0) > 0).map(e => ({name:e.jidlo, value:e.b, unit:"g", slot:e.slot}));
-      break;
-    case 'carbs':
-      totalValue = T.s;
-      items = entries.filter(e => (e.s||0) > 0).map(e => ({name:e.jidlo, value:e.s, unit:"g", slot:e.slot}));
-      break;
-    case 'fat':
-      totalValue = T.t;
-      items = entries.filter(e => (e.t||0) > 0).map(e => ({name:e.jidlo, value:e.t, unit:"g", slot:e.slot}));
-      break;
-    case 'fiber':
-      totalValue = T.vl;
-      items = entries.filter(e => (e.vl||0) > 0).map(e => ({name:e.jidlo, value:e.vl, unit:"g", slot:e.slot}));
-      break;
+    case 'protein': totalValue = T.b; items = entries.filter(e => (e.b||0) > 0).map(e => ({name:e.jidlo, value:e.b, unit:"g", slot:e.slot})); break;
+    case 'carbs': totalValue = T.s; items = entries.filter(e => (e.s||0) > 0).map(e => ({name:e.jidlo, value:e.s, unit:"g", slot:e.slot})); break;
+    case 'fat': totalValue = T.t; items = entries.filter(e => (e.t||0) > 0).map(e => ({name:e.jidlo, value:e.t, unit:"g", slot:e.slot})); break;
+    case 'fiber': totalValue = T.vl; items = entries.filter(e => (e.vl||0) > 0).map(e => ({name:e.jidlo, value:e.vl, unit:"g", slot:e.slot})); break;
     default: return;
   }
-  
   items.sort((a,b)=>b.value - a.value);
-  
-  const listHtml = items.length ? items.map(i => `
-    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-      <div><span style="font-weight:600">${i.name}</span> <span style="color:var(--muted);font-size:11px">(${i.slot})</span></div>
-      <span style="font-weight:700">${i.value.toFixed(1)} ${i.unit}</span>
-    </div>
-  `).join("") : '<div style="text-align:center;padding:20px;color:var(--muted)">Žádné záznamy pro dnešek</div>';
-  
+  const listHtml = items.length ? items.map(i => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><span style="font-weight:600">${i.name}</span> <span style="color:var(--muted);font-size:11px">(${i.slot})</span></div><span style="font-weight:700">${i.value.toFixed(1)} ${i.unit}</span></div>`).join("") : '<div style="text-align:center;padding:20px;color:var(--muted)">Žádné záznamy pro dnešek</div>';
   const targetMap = {protein: targets().protein, carbs: targets().sacharidy, fat: targets().tuky, fiber: targets().vlaknina};
   document.getElementById("macro-detail-title").innerHTML = `${label} - Denní přehled`;
   document.getElementById("macro-detail-list").innerHTML = listHtml;
@@ -494,7 +523,7 @@ function showOk(msg){ const e=document.getElementById("add-ok"); e.textContent="
 
 // Manual
 let _manualEntry=null;
-function onManualInput(){ const inp=document.getElementById("m-name"); const q=normKey(inp.value); if(q.length<2)return; const matches=Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,5); showSuggest(inp,matches,entry=>{ _manualEntry=entry; inp.value=entry[0]; hideSuggest(); const g=getTypicalGrams(entry[0]); document.getElementById("m-g").value=g; fillManualFromEntry(entry,g); }); }
+function onManualInput(){ const inp=document.getElementById("m-name"); const q=normKey(inp.value); if(q.length<2)return; const matches=Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,5); showSuggest(inp,matches,entry=>{ _manualEntry=entry; inp.value=entry[0]; hideSuggest(); const typicalG = getTypicalGrams(entry[0]); document.getElementById("m-g").value=typicalG; fillManualFromEntry(entry,typicalG); }); }
 function fillManualFromEntry(entry,g){ const [name,k100,b100,s100,t100,vl100]=entry; const r=g/100; document.getElementById("m-kcal").value=Math.round(k100*r); document.getElementById("m-b").value=(b100*r).toFixed(1); document.getElementById("m-s").value=(s100*r).toFixed(1); document.getElementById("m-t").value=(t100*r).toFixed(1); document.getElementById("m-vl").value=(vl100*r).toFixed(1); document.getElementById("m-autofill-info").style.display="block"; }
 function onManualGrams(){ if(_manualEntry) fillManualFromEntry(_manualEntry, parseFloat(document.getElementById("m-g").value)||100); }
 function onManualKey(ev){ if(ev.key==="Escape")hideSuggest(); if(ev.key==="Enter"){ev.preventDefault();handleManual();} }
