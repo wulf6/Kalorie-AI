@@ -92,6 +92,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s}
   .sheet{height:100dvh;max-height:100dvh;border-radius:0;padding:12px 16px}
   .sticky-header .tab-btn{padding:8px 12px;font-size:12px}
 }
+
 @media (min-width:768px){
   :root{--sheet-radius:16px;--fab-bottom:32px}
   .modal-overlay{align-items:center}
@@ -116,10 +117,42 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s}
 input:focus,textarea:focus{scroll-margin-bottom:120px}
 .macro-detail-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px}
 .macro-detail-card{background:var(--card);border-radius:24px;max-width:500px;width:100%;max-height:80vh;overflow-y:auto;padding:20px;border:1px solid var(--border)}
+
+.sync-toast{
+  position:fixed;
+  bottom:100px;
+  left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:linear-gradient(135deg,#16a34a,#15803d);
+  color:white;
+  padding:12px 24px;
+  border-radius:50px;
+  font-weight:600;
+  font-size:14px;
+  z-index:10000;
+  box-shadow:0 4px 20px rgba(22,163,74,0.4);
+  opacity:0;
+  transition:all 0.3s ease;
+  pointer-events:none;
+  max-width:90vw;
+  white-space:normal;
+  text-align:center;
+}
+.sync-toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+.sync-toast.error{
+  background:linear-gradient(135deg,#dc2626,#b91c1c);
+  box-shadow:0 4px 20px rgba(220,38,38,0.4);
+}
+.sync-toast.warning{
+  background:linear-gradient(135deg,#f59e0b,#d97706);
+  box-shadow:0 4px 20px rgba(245,158,11,0.4);
+}
 </style>
 </head>
 <body>
-<!-- Splash screen -->
 <div id="splash" style="position:fixed;inset:0;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s">
   <div style="font-size:72px;margin-bottom:16px">🍽</div>
   <div style="color:#fff;font-size:24px;font-weight:800;letter-spacing:1px">Kalorie AI</div>
@@ -128,7 +161,8 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
 </div>
 <div id="app"></div>
 
-<!-- MACRO DETAIL -->
+<div id="sync-toast" class="sync-toast"></div>
+
 <div id="macro-detail-modal" style="display:none" class="macro-detail-modal" onclick="closeMacroDetail()">
   <div class="macro-detail-card" onclick="event.stopPropagation()">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -140,7 +174,6 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
   </div>
 </div>
 
-<!-- SCANNER -->
 <div id="scanner" style="display:none;position:fixed;inset:0;z-index:500;background:#000;flex-direction:column">
   <div style="position:relative;flex:1;overflow:hidden">
     <video id="scan-vid" muted playsinline style="width:100%;height:100%;object-fit:cover"></video>
@@ -163,7 +196,6 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
   </div>
 </div>
 
-<!-- CONFIRM MODAL -->
 <div id="modal" style="display:none" class="modal-overlay" onclick="closeModal()">
   <div class="sheet" onclick="event.stopPropagation()" style="text-align:center">
     <div id="modal-msg" style="color:var(--text);margin-bottom:20px;font-size:15px;line-height:1.5"></div>
@@ -174,7 +206,6 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
   </div>
 </div>
 
-<!-- ADD SHEET -->
 <div id="add-sheet" style="display:none" class="modal-overlay" onclick="if(event.target===this)closeAdd()">
   <div class="sheet" onclick="event.stopPropagation()">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0">
@@ -190,7 +221,6 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
     </div>
     <div class="sheet-body">
 
-    <!-- AI -->
     <div id="panel-ai" style="display:none">
       <div id="ai-photo-area" style="margin-bottom:10px;border:2px dashed var(--border);border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('ai-photo-inp').click()" ondragover="event.preventDefault();this.style.borderColor='#6366f1'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();handlePhotoDrop(event)">
         <input type="file" id="ai-photo-inp" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoSelect(this)"/>
@@ -213,7 +243,6 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
       <button class="btn-pri" id="ai-btn" onclick="handleAI()">🤖 Analyzovat přes Gemini</button>
     </div>
 
-    <!-- Manual -->
     <div id="panel-manual">
       <div style="position:relative;margin-bottom:8px">
         <input class="inp" id="m-name" placeholder="Název jídla (zkus 'banán', 'kuřecí prsa'…)" oninput="onManualInput()" onkeydown="onManualKey(event)" autocomplete="off"/>
@@ -239,7 +268,6 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
       <button class="btn-pri" onclick="handleManual()">✅ Přidat</button>
     </div>
 
-    <!-- EAN -->
     <div id="panel-ean" style="display:none;flex-direction:column;gap:10px">
       <button onclick="openScanner()" style="padding:16px;background:var(--surface);border:2px solid #a5b4fc;border-radius:14px;color:#6366f1;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px">
         <span style="font-size:22px">📷</span> Otevřít kameru
@@ -252,13 +280,11 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
       <div style="font-size:11px;color:var(--muted);text-align:center">Data z Open Food Facts · zdarma · bez API klíče</div>
     </div>
 
-    <!-- Moje jídla -->
     <div id="panel-saved" style="display:none;flex-direction:column;gap:10px">
       <div id="saved-view-list"></div>
       <button onclick="showCreateFood()" style="padding:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:14px;cursor:pointer">+ Vytvořit nové jídlo</button>
     </div>
 
-    <!-- Editor vlastního jídla -->
     <div id="panel-foodeditor" style="display:none;flex-direction:column;gap:0;height:100%">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0">
         <span style="font-weight:700;font-size:15px" id="editor-title">Nové jídlo</span>
@@ -286,7 +312,7 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
       </div>
     </div>
 
-    </div><!-- /sheet-body -->
+    </div>
     <div class="sheet-footer">
       <div id="add-err" style="display:none;padding:8px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;color:#ef4444;font-size:13px;margin-bottom:6px"></div>
       <div id="add-ok" style="display:none;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;color:#16a34a;font-size:13px"></div>
@@ -295,7 +321,6 @@ input:focus,textarea:focus{scroll-margin-bottom:120px}
 </div>
 
 <script>
-// ── Config & State ────────────────────────────────────────────────────────────
 const FOOD_DB = {};
 
 const TYPICAL_G = {
@@ -383,6 +408,8 @@ async function loadFoodDB(){
 }
 
 function parseCSVtoDB(text){
+  // Odstraň BOM (byte order mark) pokud existuje
+  text = text.replace(/^\uFEFF/, '');
   const lines = text.split(/\r?\n/);
   if(!lines.length) return {};
   const rawHeader = lines[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -425,7 +452,6 @@ const GEMINI_PROMPT = `Odpověz POUZE tímto JSON formátem bez jakéhokoli dal�
 {"jidlo":"Název česky","porce_g":100,"kcal":100,"b":10,"s":10,"t":5,"vl":2}
 Doplň reálné hodnoty pro zadané jídlo. Vždy vrať validní JSON.`;
 
-// Pouze skutečné nápoje - tekutiny v ml
 const WATER_WORDS = [
   "voda","vody","mineralk","mineralka",
   "caj","cajek",
@@ -442,7 +468,6 @@ const WATER_WORDS = [
   "aperol","campari","vermouth","baileys","likér","liquer",
   "tea","water","drink"
 ];
-// Jídla která vypadají jako tekutina ale jsou v gramech
 const FOOD_NOT_DRINK = ["polevka","polévka","vyvár","vyvar","bujón","bujon","soup","kase","kaše","jogurt","tvaroh","puding","zmrzlina"];
 
 function isLiquid(name){
@@ -450,7 +475,6 @@ function isLiquid(name){
   if(FOOD_NOT_DRINK.some(w => k.includes(w))) return false;
   return WATER_WORDS.some(w => normKey(w) && k.includes(normKey(w)));
 }
-
 
 function normKey(s){
   return s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g,"").trim();
@@ -492,7 +516,6 @@ let editMealKey = null;
 
 if(dark) document.body.classList.add("dark");
 
-// ── Výpočty ──────────────────────────────────────────────────────────────────
 function calcBMR(v,h,a,g){
   return g==="muz" ? 10*v+6.25*h-5*a+5 : 10*v+6.25*h-5*a-161;
 }
@@ -545,7 +568,6 @@ function ring(value, max, color, label, unit, big=false){
 }
 
 function render(){
-  // Ujisti se že smazané položky nejsou v entries
   entries = entries.filter(e => e !== undefined);
   const T  = totals();
   const tg = targets();
@@ -566,7 +588,6 @@ function render(){
     <button onclick="toggleDark()" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 10px;font-size:18px;flex-shrink:0">${dark?"☀️":"🌙"}</button>
   </div>`;
 
-  // ── TAB RECEPT ──
   if(tab==="recept"){
     const rTot = recipe.reduce((a,i)=>({k:a.k+i.k,b:a.b+i.b,s:a.s+i.s,t:a.t+i.t,g:a.g+i.g}),{k:0,b:0,s:0,t:0,g:0});
     html += `<div style="max-width:900px;margin:0 auto;padding:14px 16px">
@@ -621,10 +642,29 @@ function render(){
     </div>`;
   }
 
-  // ── TAB DNES ──
   if(tab==="dnes"){
     const actBurnToday = Math.round((ls("act_log",[])).filter(a=>a.d===TODAY()).reduce((s,e)=>s+(e.kcal||0),0));
     html += `<div style="max-width:900px;margin:0 auto;padding:14px 16px">
+
+      <!-- 4 RYCHLÉ AKCE -->
+      <div style="display:flex;justify-content:space-around;align-items:center;margin-bottom:16px;padding:16px 8px;background:var(--card);border-radius:18px;border:1px solid var(--border)">
+        <button onclick="openAddFood()" style="display:flex;flex-direction:column;align-items:center;gap:8px;background:transparent;border:none;cursor:pointer;padding:4px 8px">
+          <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 12px rgba(239,68,68,.35)">🍽</div>
+          <span style="font-size:12px;font-weight:600;color:var(--text)">Zapsat jídlo</span>
+        </button>
+        <button onclick="openAddDrink()" style="display:flex;flex-direction:column;align-items:center;gap:8px;background:transparent;border:none;cursor:pointer;padding:4px 8px">
+          <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 12px rgba(59,130,246,.35)">💧</div>
+          <span style="font-size:12px;font-weight:600;color:var(--text)">Zapsat pití</span>
+        </button>
+        <button onclick="openAddActivity()" style="display:flex;flex-direction:column;align-items:center;gap:8px;background:transparent;border:none;cursor:pointer;padding:4px 8px">
+          <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#15803d);display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 12px rgba(34,197,94,.35)">🏃</div>
+          <span style="font-size:12px;font-weight:600;color:var(--text)">Aktivita</span>
+        </button>
+        <button onclick="openAddWeight()" style="display:flex;flex-direction:column;align-items:center;gap:8px;background:transparent;border:none;cursor:pointer;padding:4px 8px">
+          <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#f97316,#c2410c);display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 12px rgba(249,115,22,.35)">⚖️</div>
+          <span style="font-size:12px;font-weight:600;color:var(--text)">Hmotnost</span>
+        </button>
+      </div>
       <div class="card" style="padding:16px;margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
           <span style="color:#6366f1;font-weight:700">Kalorie (příjem)</span>
@@ -696,11 +736,10 @@ function render(){
           <div style="font-size:17px;font-weight:600;margin-bottom:6px">Nic ještě nezapsáno</div>
           <div style="font-size:13px">Klikni na + dole pro přidání jídla</div>
         </div>` : ""}
-      ${entries.length>0?`<button onclick="confirmReset()" style="width:100%;padding:11px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;cursor:pointer;margin-top:4px">🗑 Reset dne (uloží do historie)</button>`:""}
+      ${entries.length>0?`<div style="display:flex;gap:8px;margin-top:4px"><button onclick="showDailyReport()" style="flex:1;padding:11px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:12px;color:#fff;font-size:13px;cursor:pointer;font-weight:700">📋 Report dne</button><button onclick="confirmReset()" style="flex:1;padding:11px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;cursor:pointer">🗑 Reset dne</button></div>`:""}
     </div>`;
   }
 
-  // ── TAB HISTORIE ──
   if(tab==="historie"){
     const days = Object.entries(hist).sort(([a],[b])=>b.localeCompare(a));
     const chartDays = [];
@@ -724,7 +763,7 @@ function render(){
       return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:default" title="'+d.d+': '+d.kcal+' kcal">'+valLabel+'<div style="width:100%;height:'+h+'px;background:'+col+';border-radius:3px 3px 0 0;'+outline+'"></div><div style="font-size:8px;color:'+labelCol+';font-weight:'+labelW+'">'+label+'</div></div>';
     }).join("");
     html += '<div style="max-width:900px;margin:0 auto;padding:14px 16px">'+
-      '<div style="font-size:18px;font-weight:800;margin-bottom:12px">📅 Historie jídel</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:18px;font-weight:800">📅 Historie jídel</div><button onclick="showDailyReport()" style="padding:8px 14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📋 Report dne</button></div>'+
       '<div class="card" style="padding:16px;margin-bottom:16px">'+
         '<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.05em;margin-bottom:12px">KALORIE — POSLEDNÍCH 14 DNÍ</div>'+
         '<div style="display:flex;align-items:flex-end;gap:3px;height:80px;position:relative">'+
@@ -733,14 +772,14 @@ function render(){
         '</div>'+
       '</div>';
     if(!days.length){
-      html += `<div class="card" style="padding:40px;text-align:center;color:var(--muted)">Zatím žádná historie.<br>Data se uloží po resetu dne.</div>`;
+      html += `<div class="card" style="padding:40px;text-align:center;color:var(--muted)">Zatím žádná historie.<br>Data se ukládají automaticky každý den.</div>`;
     } else {
       html += days.map(([date,items])=>{
         const dk=Math.round(items.reduce((a,e)=>a+(e.kcal||0),0));
         const db=items.reduce((a,e)=>a+(e.b||0),0);
         const ds=items.reduce((a,e)=>a+(e.s||0),0);
         const dt=items.reduce((a,e)=>a+(e.t||0),0);
-        const dw=items.filter(e=>e.isWater).reduce((a,e)=>a+(e.porce_g||0),0);
+        const dw=items.filter(e=>e.isWater||isLiquid(e.jidlo)).reduce((a,e)=>a+(e.porce_g||0),0);
         const open = expanded.has("h_"+date);
         return `<div class="card" style="margin-bottom:10px">
           <div onclick="toggleExpand('h_${date}')" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
@@ -758,6 +797,7 @@ function render(){
               <span>${e.jidlo} <span style="color:var(--muted)">${e.porce_g}g</span></span>
               <span style="color:#f97316;font-weight:600">${Math.round(e.kcal)} kcal</span>
             </div>`).join("")}
+            <button onclick="showDailyReport('${date}')" style="width:100%;margin-top:10px;padding:9px;background:var(--surface);border:1px solid #a5b4fc;border-radius:10px;color:#6366f1;font-weight:700;font-size:13px;cursor:pointer">📋 Report tohoto dne</button>
           </div>`:""}
         </div>`;
       }).join("");
@@ -765,7 +805,6 @@ function render(){
     html += `</div>`;
   }
 
-  // ── TAB AKTIVITY ──
   if(tab==="aktivity"){
     const ACTIVITIES = [
       ["🚶 Chůze (pomalá, 4km/h)",3.5],["🚶 Chůze (rychlá, 6km/h)",5.0],
@@ -841,7 +880,6 @@ function render(){
     </div>`;
   }
 
-  // ── TAB PROFIL ──
   if(tab==="profil"){
     const tg2 = targets();
     html += `<div id="profil-container" style="max-width:500px;margin:0 auto;padding:14px">
@@ -940,22 +978,18 @@ function render(){
 
     if(profTab==="api"){
       const keyStatus = profile.geminiKey && profile.geminiKey.length > 10;
-      const syncOk = profile.syncUsername && profile.backendUrl;
+      const syncOk = true;
       html += `<div class="card" style="padding:20px;display:flex;flex-direction:column;gap:16px">
         <div style="font-size:13px;color:var(--muted);line-height:1.8">
           🤖 <b>Gemini AI</b> – analýza jídel volným textem<br>
           📷 <b>Čárové kódy</b> – zdarma bez klíče<br>
           ☁️ <b>Sync</b> – vlastní backend na Render
         </div>
-
-        <!-- DB status -->
         <div style="padding:10px 14px;background:${Object.keys(FOOD_DB).length>100?'#f0fdf4':'#fef9ec'};border:1px solid ${Object.keys(FOOD_DB).length>100?'#bbf7d0':'#fde68a'};border-radius:10px;font-size:13px">
           ${Object.keys(FOOD_DB).length>100
             ?'✅ Databáze: <b>'+Object.keys(FOOD_DB).length+'</b> potravin načteno'
             :'⚠️ Databáze se načítá… ('+Object.keys(FOOD_DB).length+' položek)'}
         </div>
-
-        <!-- Gemini klíč -->
         <div style="padding:12px 14px;background:${keyStatus?"#f0fdf4":"#fef9ec"};border:1px solid ${keyStatus?"#bbf7d0":"#fde68a"};border-radius:12px;display:flex;align-items:center;gap:10px">
           <span style="font-size:22px">${keyStatus?"✅":"⚠️"}</span>
           <div>
@@ -973,28 +1007,20 @@ function render(){
           </div>
           <div id="api-test-result" style="display:none;margin-top:8px;padding:8px 12px;border-radius:8px;font-size:13px"></div>
         </div>
-
-        <!-- ☁️ SYNC - NOVÝ -->
         <div style="padding:14px;background:var(--surface);border-radius:12px;border:1px solid ${syncOk?"#bbf7d0":"var(--border)"}">
           <div style="font-weight:700;font-size:13px;margin-bottom:4px">☁️ Sync mezi zařízeními</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6">
             Zadej stejné <b>uživatelské jméno</b> na PC i Androidu → data se sdílí automaticky.
           </div>
-
           <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;display:block;margin-bottom:4px">UŽIVATELSKÉ JMÉNO</label>
           <input class="inp" type="text" id="sync-username" placeholder="např. wulf6" style="margin-bottom:10px;font-size:14px;font-weight:600" autocomplete="off" autocapitalize="off" spellcheck="false"/>
-
-
-
           <button onclick="saveSyncConfig()" style="width:100%;padding:11px;background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:13px;cursor:pointer">💾 Uložit a synchronizovat</button>
-
           ${syncOk
             ?`<div style="font-size:11px;color:#16a34a;margin-top:8px;padding:8px 10px;background:#f0fdf4;border-radius:8px">
                 ✅ Sync aktivní · <b>${profile.syncUsername}</b><br>
                 <span style="color:var(--muted)">Stejné jméno zadej na Androidu pro sdílení dat</span>
               </div>`
             :`<div style="font-size:11px;color:var(--muted);margin-top:6px">Data se ukládají jen lokálně dokud nezadáš jméno a URL.</div>`}
-
           <div id="sync-status-line" style="font-size:11px;color:var(--muted);margin-top:8px;padding:5px 10px;background:var(--surface);border-radius:8px;text-align:center">${localStorage.getItem("last_sync_status")||"Čekám na sync…"}</div>
           ${syncOk?`<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
             <div style="display:flex;gap:8px">
@@ -1006,40 +1032,42 @@ function render(){
             <button onclick="forceDownload()" style="width:100%;padding:9px;background:#ef4444;border:none;border-radius:10px;color:#fff;font-weight:600;font-size:13px;cursor:pointer">📥 Stáhnout profil ze serveru (přepíše lokální)</button>
           </div>`:""}
         </div>
-
-        <!-- Proxy URL -->
-        <div>
-          <label style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.05em;display:block;margin-bottom:8px">PROXY URL (volitelné – pro Gemini AI)</label>
-          <input class="inp" type="text" id="proxy-url-inp" placeholder="https://tvuj-worker.workers.dev" style="font-size:13px" autocomplete="off"/>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button onclick="saveProxyUrl()" style="flex:1;padding:11px;background:#0f766e;border:none;border-radius:10px;color:#fff;font-weight:700;font-size:13px;cursor:pointer">💾 Uložit proxy</button>
-            ${profile.proxyUrl?`<button onclick="clearProxy()" style="padding:11px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;color:#ef4444;font-weight:600;font-size:12px;cursor:pointer">× Smazat</button>`:""}
+        <div style="background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.08));border:1px solid #a5b4fc;border-radius:12px;padding:16px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">📋 Denní report</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6">Přehled všeho co jsi dnes snědl — všechny hodnoty. Kopírovat nebo stáhnout.</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="showDailyReport()" style="flex:1;padding:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:13px;cursor:pointer">📋 Dnes</button>
+            <button onclick="showReportPicker()" style="flex:1;padding:12px;background:var(--surface);border:1px solid #a5b4fc;border-radius:10px;color:#6366f1;font-weight:700;font-size:13px;cursor:pointer">📅 Jiný den</button>
           </div>
-          ${profile.proxyUrl?`<div style="font-size:11px;color:#16a34a;margin-top:6px">✓ ${profile.proxyUrl}</div>`:`<div style="font-size:11px;color:var(--muted);margin-top:6px">Pro AI z GitHub Pages potřebuješ Cloudflare Worker proxy.</div>`}
         </div>
 
-        <div>
-          <label style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.05em;display:block;margin-bottom:8px">VELIKOST PÍSMA</label>
+        <div style="padding:14px;background:var(--surface);border-radius:12px;border:1px solid var(--border)">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">🔀 Proxy URL <span style="font-weight:400;color:var(--muted)">(volitelné – pro Gemini AI)</span></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.6">Pro AI z GitHub Pages potřebuješ Cloudflare Worker proxy.</div>
+          <input class="inp" type="text" id="proxy-url-inp" placeholder="https://tvuj-worker.workers.dev" style="margin-bottom:8px;font-size:13px" autocomplete="off" autocapitalize="off" spellcheck="false"/>
           <div style="display:flex;gap:8px">
-            ${[["Malé","0.85"],["Normální","1.0"],["Větší","1.12"],["Velké","1.25"]].map(([l,v])=>`
-              <button onclick="setFontSize('${v}')"
-                style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${(profile.fontSize||'1.0')===v?'#6366f1':'var(--border)'};background:${(profile.fontSize||'1.0')===v?'#eff6ff':'var(--surface)'};color:${(profile.fontSize||'1.0')===v?'#6366f1':'var(--muted)'};font-size:${Math.round(14*parseFloat(v))}px;cursor:pointer;font-weight:600">
-                ${l}
-              </button>`).join("")}
+            <button onclick="saveProxyUrl()" style="flex:1;padding:11px;background:linear-gradient(135deg,#0f766e,#0d9488);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:13px;cursor:pointer">💾 Uložit proxy</button>
+            ${profile.proxyUrl?`<button onclick="clearProxy()" style="padding:11px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;color:#ef4444;font-weight:600;font-size:13px;cursor:pointer">× Smazat</button>`:""}
+          </div>
+        </div>
+
+        <div style="padding:14px;background:var(--surface);border-radius:12px;border:1px solid var(--border)">
+          <div style="font-weight:700;font-size:13px;margin-bottom:10px">🔤 Velikost písma</div>
+          <div style="display:flex;gap:6px">
+            ${[[0.85,"Malé"],[1.0,"Normální"],[1.15,"Větší"],[1.3,"Velké"]].map(([size,label])=>`
+              <button onclick="setFontSize(${size})" style="flex:1;padding:10px 4px;border:2px solid ${(profile.fontSize||1.0)==size?'#6366f1':'var(--border)'};border-radius:10px;background:${(profile.fontSize||1.0)==size?'#eff6ff':'var(--surface)'};color:${(profile.fontSize||1.0)==size?'#6366f1':'var(--muted)'};font-weight:${(profile.fontSize||1.0)==size?700:500};font-size:${size*11}px;cursor:pointer;transition:all .2s">${label}</button>
+            `).join("")}
           </div>
         </div>
       </div>`;
     }
 
     if(profTab==="vaha"){
-      const weightLog = ls("weight_log", []);
-      const sortedW = [...weightLog].sort((a,b)=>a.d.localeCompare(b.d));
+      const weightLog = ls("weight_log", []).filter(e => !e._del);
+      const sortedW = [...weightLog].sort((a,b)=>a.d.localeCompare(b.d)).map(e=>({...e, _showD: e.displayD||e.d.slice(0,10)}));
       const lastW = sortedW[sortedW.length-1];
       const firstW = sortedW[0];
       const wDiff = (sortedW.length>1) ? (lastW.w - firstW.w).toFixed(1) : null;
-      const maxW = sortedW.length ? Math.max(...sortedW.map(e=>e.w)) : (profile.vaha||80);
-      const minW = sortedW.length ? Math.min(...sortedW.map(e=>e.w)) : (profile.vaha||80);
-      const chartW = sortedW.slice(-30);
       html += `<div class="card" style="padding:20px;margin-bottom:12px">
         <div style="font-weight:700;font-size:14px;margin-bottom:14px">Zaznamenat váhu</div>
         <div style="display:flex;gap:8px;align-items:center">
@@ -1060,7 +1088,7 @@ function render(){
               const prev = arr[i+1];
               const diff = prev ? (e.w-prev.w).toFixed(1) : null;
               return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
-                <span style="color:var(--muted)">${e.d}</span>
+                <span style="color:var(--muted)">${e._showD||e.d.slice(0,10)}</span>
                 <span style="font-weight:700">${e.w} kg</span>
                 ${diff!==null?`<span style="font-size:12px;color:${parseFloat(diff)<0?"#16a34a":"#ef4444"}">${parseFloat(diff)>0?"+":""}${diff}</span>`:"<span></span>"}
                 <button onclick="deleteWeight('${e.d}')" style="background:transparent;border:none;color:#ef4444;cursor:pointer;padding:2px 6px;font-size:14px">×</button>
@@ -1089,6 +1117,7 @@ function render(){
               <button onclick="updProf('${key}',null)" style="font-size:11px;color:var(--muted);background:transparent;border:none;cursor:pointer;padding:2px 6px;border-radius:6px;border:1px solid var(--border)">Auto: ${auto}g</button>
             </div>
             <input class="inp" type="number" min="0" max="999" step="1"
+              id="prof-inp-${key}"
               value="${mp[key]!=null?mp[key]:auto}"
               onblur="if(this.value!='')updProf('${key}',+this.value)"
               onkeydown="if(event.key==='Enter'){this.blur();}"/>
@@ -1100,13 +1129,12 @@ function render(){
     html += `</div>`;
   }
 
-  html += `<button onclick="openAdd()" class="fab">+</button></div>`;
+  html += `</div>`;
   document.getElementById("app").innerHTML = html;
 
   const splash = document.getElementById("splash");
   if(splash && splash.style.display!=="none"){ splash.style.opacity=0; setTimeout(()=>splash.style.display="none",400); }
   
-  // Vždy explicitně nastav hodnoty profil inputů
   requestAnimationFrame(()=>{
     ["vyska","vaha","cilVaha","vek"].forEach(key=>{
       const el = document.getElementById("prof-inp-"+key);
@@ -1120,16 +1148,13 @@ function render(){
   if(keyInp && profile.geminiKey) keyInp.value = profile.geminiKey;
   const proxyInp = document.getElementById("proxy-url-inp");
   if(proxyInp && profile.proxyUrl) proxyInp.value = profile.proxyUrl;
-  // ── Předvyplnění sync polí ──
   const syncUsernameInp = document.getElementById("sync-username");
   if(syncUsernameInp && profile.syncUsername) syncUsernameInp.value = profile.syncUsername;
-
 }
 
 function entryHTML(e){ if(e._del) return ""; 
   const open = expanded.has(e.id);
   const icon = e.source==="barcode"?"📦":e.source==="recept"?"👨‍🍳":e.source==="moje"?"⭐":e.source==="manual"?"✏️":"🤖";
-  const isMoje = e.source==="moje" || e.source==="recept";
   return `<div class="entry">
     <div onclick="toggleExpand(${e.id})" style="padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer">
       <span style="font-size:20px">${icon}</span>
@@ -1145,6 +1170,12 @@ function entryHTML(e){ if(e._del) return "";
       <span style="color:var(--muted);font-size:12px">${open?"▲":"▼"}</span>
     </div>
     ${open?`<div style="padding:0 14px 12px" onclick="event.stopPropagation()">
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">KDY JSEM TO JEDL</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          ${SLOTS.map(s=>`<button onclick="moveEntry(${e.id},'${s}')" style="padding:7px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:2px solid ${s===e.slot?'#6366f1':'var(--border)'};background:${s===e.slot?'#6366f1':'var(--surface)'};color:${s===e.slot?'#fff':'var(--muted)'};font-weight:${s===e.slot?700:400};transition:all .15s">${s}</button>`).join("")}
+        </div>
+      </div>
       <div style="background:var(--surface);border-radius:10px;padding:10px 12px;margin-bottom:8px">
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">UPRAVIT GRAMÁŽ</div>
         <div style="display:flex;gap:8px;align-items:center">
@@ -1163,6 +1194,142 @@ function entryHTML(e){ if(e._del) return "";
   </div>`;
 }
 
+// ── Rychlé akce z hlavní obrazovky ───────────────────────────────────────────
+function openAddFood(){
+  activeSlot = "Oběd";
+  openAdd();
+  setMode("manual");
+}
+
+let _drinkSlot = "Snídaně";
+
+function openAddDrink(){
+  _drinkSlot = activeSlot || "Snídaně";
+  document.getElementById("drink-modal").style.display="flex";
+  const quickDrinks = [
+    ["Voda",250,0],["Voda",500,0],["Čaj",250,0],["Káva",200,2],
+    ["Mléko",250,46],["Džus",200,42],["Pivo 10°",500,40],
+    ["Víno",150,68],["Cola",330,42],["Energetický nápoj",250,46]
+  ];
+  const container = document.getElementById("drink-quick-btns");
+  if(container){
+    container.innerHTML = quickDrinks.map(([n,ml,k100])=>{
+      const kcal = Math.round(k100*ml/100);
+      const label = n+" "+ml+"ml"+(kcal>0?" ("+kcal+" kcal)":"");
+      return "<button onclick=\"quickAddDrink(\'"+n+"\',"+ml+","+k100+")\" style=\"padding:8px 12px;background:var(--surface);border:1px solid #93c5fd;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;color:#1d4ed8\">"+label+"</button>";
+    }).join("");
+  }
+  renderDrinkSlots();
+  setTimeout(()=>{ const i=document.getElementById("drink-name-inp"); if(i)i.focus(); },100);
+}
+function closeAddDrink(){ document.getElementById("drink-modal").style.display="none"; }
+
+function renderDrinkSlots(){
+  const el = document.getElementById("drink-slot-btns"); if(!el) return;
+  el.innerHTML = SLOTS.map(s=>"<button onclick=\"setDrinkSlot(\'"+s+"\')\" style=\"padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid "+(s===_drinkSlot?"#3b82f6":"var(--border)")+";background:"+(s===_drinkSlot?"#3b82f6":"var(--surface)")+";color:"+(s===_drinkSlot?"#fff":"var(--muted)")+";transition:all .15s\">"+s+"</button>").join("");
+}
+function setDrinkSlot(s){ _drinkSlot=s; renderDrinkSlots(); }
+
+function quickAddDrink(name, ml, kcal100){
+  const kcal = Math.round(kcal100 * ml / 100);
+  addEntry({jidlo:name, porce_g:ml, kcal, b:0, s:0, t:0, vl:0, isWater:true, source:"manual", slot:_drinkSlot});
+  closeAddDrink();
+  setToast("✅ "+name+" ("+ml+"ml) → "+_drinkSlot);
+}
+
+function saveDrinkModal(){
+  const name = document.getElementById("drink-name-inp").value.trim();
+  const ml = parseFloat(document.getElementById("drink-ml-inp").value)||250;
+  const kcal = parseFloat(document.getElementById("drink-kcal-inp").value)||0;
+  if(!name){ setToast("⚠️ Zadej název nápoje"); return; }
+  addEntry({jidlo:name, porce_g:ml, kcal, b:0, s:0, t:0, vl:0, isWater:true, source:"manual", slot:_drinkSlot});
+  document.getElementById("drink-name-inp").value="";
+  closeAddDrink();
+  setToast("✅ "+name+" ("+ml+"ml) → "+_drinkSlot);
+}
+
+// ── Aktivita modal ────────────────────────────────────────────────────────────
+const ACTIVITIES_LIST = [
+  ["🚶 Chůze (pomalá, 4km/h)",3.5],["🚶 Chůze (rychlá, 6km/h)",5.0],
+  ["🏃 Běh (pomalý, 8km/h)",8.0],["🏃 Běh (rychlý, 12km/h)",11.5],
+  ["🚴 Kolo (rekreační)",5.5],["🚴 Kolo (intenzivní)",10.0],
+  ["🏊 Plavání",7.0],["⚽ Fotbal",8.0],
+  ["🏋️ Posilovna (lehká)",3.5],["🏋️ Posilovna (těžká)",6.0],
+  ["🧘 Jóga",2.5],["💃 Tanec",5.0],
+  ["🏔️ Turistika (kopce)",7.0],["🛹 Inline brusle",8.0],
+  ["🎾 Tenis",7.5],["🏐 Volejbal",4.0],
+  ["🧹 Domácí práce",2.5],["🌿 Zahradničení",3.5],
+  ["🛒 Nákup (chůze)",2.5],["🚣 Veslování",7.0]
+];
+function openAddActivity(){
+  const modal = document.getElementById("activity-modal");
+  if(!modal) return;
+  modal.style.display="flex";
+  const sel = document.getElementById("act-modal-select");
+  if(sel && !sel.innerHTML){
+    sel.innerHTML = ACTIVITIES_LIST.map(([n,m])=>"<option value=\""+m+"\" data-name=\""+n+"\">"+n+"</option>").join("");
+  }
+  updateActPreview();
+}
+function closeAddActivity(){ document.getElementById("activity-modal").style.display="none"; }
+function updateActPreview(){
+  const sel=document.getElementById("act-modal-select");
+  const minEl=document.getElementById("act-modal-min");
+  const prev=document.getElementById("act-modal-preview");
+  if(!sel||!minEl||!prev) return;
+  const kcal=Math.round((parseFloat(sel.value)||3.5)*profile.vaha*(parseFloat(minEl.value)||30)/60);
+  prev.textContent="−"+kcal+" kcal";
+}
+function saveActivityModal(){
+  const sel=document.getElementById("act-modal-select");
+  const minEl=document.getElementById("act-modal-min");
+  if(!sel||!minEl) return;
+  const met=parseFloat(sel.value)||3.5;
+  const name=sel.options[sel.selectedIndex]?.dataset?.name||"Aktivita";
+  const min=parseFloat(minEl.value)||30;
+  const kcal=Math.round(met*profile.vaha*(min/60));
+  const log=ls("act_log",[]);
+  log.push({id:Date.now(),d:TODAY(),name,min,met,kcal,_t:Date.now()});
+  sv("act_log",log);
+  closeAddActivity();
+  setToast("✅ "+name+" · −"+kcal+" kcal");
+  render();
+}
+
+function openAddWeight(){
+  document.getElementById("weight-modal").style.display="flex";
+  const lastW = ls("weight_log",[]).filter(e=>!e._del).sort((a,b)=>a.d.localeCompare(b.d)).slice(-1)[0];
+  const inp = document.getElementById("weight-modal-inp");
+  if(inp) inp.value = lastW ? lastW.w : profile.vaha;
+  const dateEl = document.getElementById("weight-modal-date");
+  if(dateEl) dateEl.textContent = new Date().toLocaleDateString("cs-CZ");
+  setTimeout(()=>{ if(inp){ inp.focus(); inp.select(); } },100);
+}
+function closeAddWeight(){ document.getElementById("weight-modal").style.display="none"; }
+
+function saveWeightModal(){
+  const inp = document.getElementById("weight-modal-inp");
+  const w = parseFloat(inp.value);
+  if(isNaN(w)||w<20||w>300){ setToast("⚠️ Neplatná hodnota"); return; }
+  const now = Date.now();
+  const dateKey = TODAY()+"_"+now;
+  const log = ls("weight_log",[]);
+  log.push({d:dateKey, w, _t:now, displayD:TODAY()});
+  sv("weight_log", log);
+  profile = {...profile, vaha:w, _profileTs:now};
+  sv("prof2", profile);
+  closeAddWeight();
+  setToast("✅ "+w+" kg uloženo");
+  markDirty(); scheduleSync(); render();
+}
+function moveEntry(id, newSlot){
+  entries = entries.map(e => String(e.id)===String(id) ? {...e, slot:newSlot, _t:Date.now()} : e);
+  sv("ent_"+TODAY(), entries);
+  render();
+  scheduleSync();
+  setToast("✓ Přesunuto do: " + newSlot);
+}
+
 function applyGram(id){
   const inp = document.getElementById("gram-inp-"+id);
   if(!inp) return;
@@ -1178,56 +1345,12 @@ function applyGram(id){
   syncWithServer({});
 }
 
-function removeIngFromEntry(entryId, ingIdx){
-  entries = entries.map(e=>{
-    if(e.id!==entryId) return e;
-    const slozky = [...(e.slozky||[])];
-    const removed = slozky.splice(ingIdx,1)[0];
-    return {...e, slozky, kcal:Math.max(0,(e.kcal||0)-(removed.k||0)), b:Math.max(0,(e.b||0)-(removed.b||0)), s:Math.max(0,(e.s||0)-(removed.s||0)), t:Math.max(0,(e.t||0)-(removed.t||0)), vl:Math.max(0,(e.vl||0)-(removed.vl||0)), porce_g:Math.max(0,(e.porce_g||0)-(removed.g||0))};
-  });
-  sv("ent_"+TODAY(), entries);
-  render();
-}
-
-let _inlineMatches = {};
-function onInlineIngInput(inp, entryId){
-  const q = normKey(inp.value);
-  if(q.length < 2){ hideGlobalSuggest(); return; }
-  const matches = Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,8).map(([,e])=>e);
-  showGlobalSuggest(inp, matches, (entry) => {
-    const nameInp = document.getElementById("add-ing-name-"+entryId);
-    const gInp = document.getElementById("add-ing-g-"+entryId);
-    if(nameInp) nameInp.value = entry[0];
-    if(gInp) gInp.value = getTypicalGrams(entry[0]);
-    hideGlobalSuggest();
-  });
-}
-function hideInlineSug(entryId){ const sug = document.getElementById("inline-sug-"+entryId); if(sug) sug.style.display="none"; }
-
-function addIngToEntry(entryId){
-  const nameEl = document.getElementById("add-ing-name-"+entryId);
-  const gEl = document.getElementById("add-ing-g-"+entryId);
-  if(!nameEl||!gEl) return;
-  const name = nameEl.value.trim(); if(!name) return;
-  const g = parseFloat(gEl.value)||100;
-  const found = lookupLocal(name);
-  const entry = found||[name,0,0,0,0,0];
-  const r = g/100;
-  const newIng = {id:Date.now()+Math.random(), j:entry[0]||name, g, k:entry[1]*r, b:entry[2]*r, s:entry[3]*r, t:entry[4]*r, vl:(entry[5]||0)*r};
-  entries = entries.map(e=>{
-    if(e.id!==entryId) return e;
-    return {...e, slozky:[...(e.slozky||[]),newIng], kcal:(e.kcal||0)+newIng.k, b:(e.b||0)+newIng.b, s:(e.s||0)+newIng.s, t:(e.t||0)+newIng.t, vl:(e.vl||0)+newIng.vl, porce_g:(e.porce_g||0)+g};
-  });
-  sv("ent_"+TODAY(), entries);
-  render();
-}
-
 function toggleExpand(id){ expanded.has(id)?expanded.delete(id):expanded.add(id); render(); }
 function removeEntry(id){ entries=entries.map(e=>String(e.id)===String(id)?{...e,_del:true,_t:Date.now()}:e); sv("ent_"+TODAY(),entries); render(); scheduleSync(); }
 function setTab(t){ tab=t; render(); }
 function setProfTab(t){ profTab=t; render(); }
 function toggleDark(){ dark=!dark; document.body.classList.toggle("dark",dark); sv("dark2",dark); render(); }
-function addEntry(data){ entries=[...entries,{...data,id:Date.now(),slot:activeSlot}]; sv("ent_"+TODAY(),entries); render(); syncWithServer({}); }
+function addEntry(data){ entries=[...entries,{...data,id:Date.now(),slot:activeSlot}]; sv("ent_"+TODAY(),entries); render(); markDirty(); scheduleSync(); }
 function updProf(k,v){ profile={...profile,[k]:v,_profileTs:Date.now()}; sv("prof2",profile); render(); scheduleSync(); }
 
 function saveApiKey(){
@@ -1252,21 +1375,8 @@ async function testApiKey(){
     else { res_el.style.background="#fef2f2"; res_el.style.border="1px solid #fca5a5"; res_el.style.color="#ef4444"; res_el.textContent="❌ Chyba "+r.status; }
   } catch(e) { res_el.style.background="#fef9ec"; res_el.style.border="1px solid #fde68a"; res_el.style.color="#92400e"; res_el.textContent="⚠️ Nelze se připojit."; }
 }
-function saveProxyUrl(){ const inp=document.getElementById("proxy-url-inp"); if(!inp)return; const url=inp.value.trim().replace(/\/$/,""); profile={...profile,proxyUrl:url}; sv("prof2",profile); setToast(url?"✓ Proxy uložena!":"Proxy smazána"); render(); }
-function clearProxy(){ profile={...profile,proxyUrl:""}; sv("prof2",profile); setToast("Proxy smazána"); render(); }
-function setFontSize(size){ profile={...profile,fontSize:size}; sv("prof2",profile); applyFontSize(size); render(); }
-function applyFontSize(size){
-  const scale = parseFloat(size)/1.0;
-  document.documentElement.style.setProperty("--fs-xs",   (10*scale)+"px");
-  document.documentElement.style.setProperty("--fs-sm",   (12*scale)+"px");
-  document.documentElement.style.setProperty("--fs-base", (14*scale)+"px");
-  document.documentElement.style.setProperty("--fs-md",   (15*scale)+"px");
-  document.documentElement.style.setProperty("--fs-lg",   (16*scale)+"px");
-  document.documentElement.style.setProperty("--fs-xl",   (18*scale)+"px");
-  document.documentElement.style.setProperty("--fs-xxl",  (24*scale)+"px");
-}
 function clearApiKey(){ profile={...profile,geminiKey:"",geminiKeyTs:Date.now()}; sv("prof2",profile); setToast("Klíč smazán"); render(); }
-function confirmReset(){ showModal("Uložit dnešní jídla do historie a začít nový den?",()=>{ if(entries.length>0){hist[TODAY()]=entries;sv("hist2",hist);} entries=[]; sv("ent_"+TODAY(),entries); render(); scheduleSync(); }); }
+function confirmReset(){ showModal("Uložit dnešní jídla do historie a začít nový den?",()=>{ if(entries.length>0){hist[TODAY()]=entries.filter(e=>!e._del);sv("hist2",hist);} entries=[]; sv("ent_"+TODAY(),entries); render(); scheduleSync(); }); }
 function showModal(msg,cb){ document.getElementById("modal-msg").innerHTML=msg; document.getElementById("modal").style.display="flex"; modalCb=cb; }
 function closeModal(){ document.getElementById("modal").style.display="none"; modalCb=null; }
 function modalYes(){ if(modalCb)modalCb(); closeModal(); }
@@ -1332,9 +1442,54 @@ function showErr(msg){ const el=document.getElementById("add-err"); el.textConte
 function showOk(msg){ const el=document.getElementById("add-ok"); if(el){el.textContent="✓ "+msg; el.style.display="block";} }
 function setToast(msg){ let t=document.getElementById("_toast"); if(!t){t=document.createElement("div");t.id="_toast";t.style.cssText="position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:10px 22px;border-radius:50px;font-weight:600;font-size:14px;z-index:9999;box-shadow:0 4px 16px rgba(22,163,74,.3);transition:opacity .3s";document.body.appendChild(t);} t.textContent=msg; t.style.opacity=1; clearTimeout(t._t); t._t=setTimeout(()=>{t.style.opacity=0;},2400); }
 
+function showSyncToast(message, type){
+  type = type || "success";
+  var toast = document.getElementById("sync-toast");
+  if(!toast) return;
+  toast.textContent = message;
+  toast.className = "sync-toast " + (type === "error" ? "error" : type === "warning" ? "warning" : "");
+  setTimeout(function(){ toast.classList.add("show"); }, 10);
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ toast.classList.remove("show"); }, 3000);
+}
+
+function setSyncStatus(msg){
+  var el = document.getElementById("sync-status-line");
+  if(el) el.textContent = msg;
+  try{ localStorage.setItem("last_sync_status", msg); }catch(_){}
+}
+
+async function forceUpload(){
+  var username = (localStorage.getItem("_sync_username")||"").trim();
+  if(!username){ setToast("Nastav username"); return; }
+  setSyncStatus("⬆️ Nahrávám data…");
+  setToast("⬆️ Nahrávám na server…");
+  try {
+    var r = await fetch(BACKEND_URL + "/sync", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        device_id: DEVICE_ID,
+        username: username,
+        profile: Object.assign({}, profile, {_profileTs: profile._profileTs || Date.now()}),
+        entries: {[TODAY()]: entries},
+        history: hist,
+        receptar: ls("saved_foods",[]),
+        aktivity: ls("act_log",[]),
+        weight_log: ls("weight_log",[])
+      })
+    });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    setSyncStatus("✅ Upload hotov · " + new Date().toLocaleTimeString("cs-CZ",{hour:"2-digit",minute:"2-digit"}));
+    setToast("✅ Data nahrána na server");
+  } catch(e) {
+    setSyncStatus("⚠️ Upload selhal: "+e.message);
+    setToast("❌ Upload selhal: "+e.message);
+  }
+}
+
 let _aiMatches=[];
 function onAiInput(){ const inp=document.getElementById("ai-input"); const q=normKey(inp.value); if(q.length<2){hideGlobalSuggest();return;} const matches=Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,8).map(([,e])=>e); showGlobalSuggest(inp,matches,(entry)=>{inp.value=entry[0];hideGlobalSuggest();const gInp=document.getElementById("ai-g");if(gInp)gInp.value=getTypicalGrams(entry[0]);}); }
-function handleDB(){ const txt=document.getElementById("ai-input").value.trim(); if(!txt){showErr("Zadej název.");return;} const g=parseFloat(document.getElementById("ai-g").value)||100; const found=lookupLocal(txt); if(found){addEntry(makeEntry(found,g));document.getElementById("ai-input").value="";hideGlobalSuggest();showOk(found[0]+" přidáno");setTimeout(closeAdd,1200);}else{showErr("Nenalezeno v DB. Zkus AI.");} }
 
 let _photoBase64=null, _photoMime="image/jpeg";
 function handlePhotoSelect(inp){ const file=inp.files[0]; if(!file)return; loadPhoto(file); }
@@ -1413,7 +1568,6 @@ async function handleScanFile(inp){
   reader.readAsDataURL(file);
 }
 
-// ── Open Food Facts vyhledávání ──────────────────────────────────────────────
 async function searchOpenFoodFacts(query){
   try {
     const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&lc=cs&cc=cz&page_size=5`;
@@ -1431,7 +1585,7 @@ async function searchOpenFoodFacts(query){
         const t = parseFloat((n.fat_100g||0).toFixed(1));
         const vl = parseFloat((n.fiber_100g||0).toFixed(1));
         if(!kcal && !b && !s && !t) return null;
-        return [name, kcal, b, s, t, vl, "off"]; // "off" = Open Food Facts
+        return [name, kcal, b, s, t, vl, "off"];
       })
       .filter(Boolean);
   } catch(e) {
@@ -1475,12 +1629,8 @@ function onManualInput(){
   document.getElementById("m-autofill-info").style.display="none"; 
   const q=inp.value.trim();
   if(q.length<2){hideGlobalSuggest();return;} 
-  
-  // Okamžitě zobraz lokální výsledky
   const localMatches=searchDB(q,6);
   if(localMatches.length) showGlobalSuggest(inp,localMatches,selectManualSug);
-  
-  // Po 600ms přidej výsledky z Open Food Facts
   clearTimeout(_manualSearchTimeout);
   _manualSearchTimeout=setTimeout(async()=>{
     const offMatches = await searchOpenFoodFacts(q);
@@ -1494,7 +1644,6 @@ function fillManualFromEntry(entry,g){ const r=(parseFloat(g)||100)/100; const l
 function onManualGrams(){ if(!_currentManualEntry)return; const g=parseFloat(document.getElementById("m-g")?.value)||100; fillManualFromEntry(_currentManualEntry,g); }
 function onManualKey(ev){ if(ev.key==="Escape"){hideGlobalSuggest();return;} if(ev.key==="Enter"){ev.preventDefault();hideGlobalSuggest();handleManual();} }
 function handleManual(){ const name=document.getElementById("m-name").value.trim();if(!name){showErr("Zadej název.");return;}   const liquid=isLiquid(name); const g=parseFloat(document.getElementById("m-g").value)||(liquid?250:100); const kcal=parseFloat(document.getElementById("m-kcal").value)||0; if(!liquid&&!kcal){showErr("Zadej kalorie.");return;} addEntry({jidlo:name,porce_g:g,kcal,b:parseFloat(document.getElementById("m-b").value)||0,s:parseFloat(document.getElementById("m-s").value)||0,t:parseFloat(document.getElementById("m-t").value)||0,vl:parseFloat(document.getElementById("m-vl").value)||0,isWater:liquid,source:"manual"});
-  // Vyčisti formulář
   ["m-name","m-kcal","m-b","m-s","m-t","m-vl"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("m-g").value="100";
   document.getElementById("m-autofill-info").style.display="none";
@@ -1529,206 +1678,50 @@ function showMacroDetail(label,type){
   modal.style.display="flex"; 
 }
 function closeMacroDetail(){ const m=document.getElementById("macro-detail-modal");if(m)m.style.display="none"; }
-function logWeight(){ const inp=document.getElementById("w-inp");if(!inp)return; const w=parseFloat(inp.value);if(isNaN(w)||w<20||w>300){setToast("Neplatná hodnota");return;} const log=ls("weight_log",[]);log.push({d:TODAY(),w,_t:Date.now()});sv("weight_log",log); setToast("✓ "+w+" kg uloženo");render(); }
-function deleteWeight(date){ sv("weight_log",ls("weight_log",[]).filter(e=>e.d!==date));render(); }
+function logWeight(){ const inp=document.getElementById("w-inp");if(!inp)return; const w=parseFloat(inp.value);if(isNaN(w)||w<20||w>300){setToast("Neplatná hodnota");return;} const now=Date.now(); const dateKey=TODAY()+"_"+now; const log=ls("weight_log",[]); log.push({d:dateKey,w,_t:now,displayD:TODAY()}); sv("weight_log",log); profile={...profile,vaha:w,_profileTs:now}; sv("prof2",profile); setToast("✓ "+w+" kg uloženo"); markDirty(); scheduleSync(); render(); }
+function deleteWeight(date){ const log=ls("weight_log",[]).map(e=>e.d===date?{...e,_del:true,_t:Date.now()}:e); sv("weight_log",log); markDirty(); scheduleSync(); render(); }
 function repeatEntry(id){ const orig=entries.find(e=>e.id===id);if(!orig)return; const{id:_,...copy}=orig;entries.push({...copy,id:Date.now()}); sv("ent_"+TODAY(),entries);render();setToast("✓ "+orig.jidlo+" přidáno"); }
 function repeatYesterday(idx){ const items=window._ydItems||[];const e=items[idx];if(!e)return; addEntry({...e,id:undefined});setToast("✓ "+e.jidlo+" přidáno znovu"); }
 function requestNotifications(){ if(!("Notification"in window)){setToast("Notifikace nejsou podporovány");return;} Notification.requestPermission().then(p=>{if(p==="granted"){updProf("notifEnabled",true);scheduleNotification();setToast("✓ Notifikace zapnuty");}else setToast("Notifikace zamítnuty");}); }
 function disableNotifications(){ updProf("notifEnabled",false);setToast("Notifikace vypnuty"); }
 function scheduleNotification(){ if(!profile.notifEnabled||Notification.permission!=="granted")return; const now=new Date(),next=new Date(); next.setHours(20,0,0,0);if(next<=now)next.setDate(next.getDate()+1); setTimeout(()=>{const T=totals();new Notification("🍽 Kalorie AI",{body:`Dnes: ${Math.round(T.kcal)} kcal | B:${T.b.toFixed(0)}g S:${T.s.toFixed(0)}g T:${T.t.toFixed(0)}g`,icon:"icon.svg"});scheduleNotification();},next-now); }
 
-// ── NOVÝ BACKEND SYNC ─────────────────────────────────────────────────────────
+// ── BACKEND SYNC ──────────────────────────────────────────────────────────────
 function getDeviceId(){ let id=localStorage.getItem("device_id");if(!id){id=crypto.randomUUID();localStorage.setItem("device_id",id);}return id; }
 const DEVICE_ID = getDeviceId();
 let syncTimeout = null;
 
-async function syncWithServer(push={}, _retry=false){
-  const backendUrl = BACKEND_URL;
-  const username = (localStorage.getItem("_sync_username") || profile.syncUsername || "").trim();
-  if(!username){ return; }
-
-  // Zobraz "probouzím server" pokud byl dlouho neaktivní
-  const lastSync = ls("last_sync_time", 0);
-  const wasAsleep = (Date.now() - lastSync) > 10 * 60 * 1000; // 10 minut
-  if(wasAsleep && !_retry) setToast("⏳ Probouzím server…");
-  else if(!_retry) setToast("🔄 Synchronizuji…");
-
-  try{
-    const today = TODAY();
-    // Vždy pošli aktuální lokální jídla - backend merguje
-    const body = {
-      device_id: DEVICE_ID,
-      username: username,
-      profile: {...profile, _profileTs: profile._profileTs || 0},
-      entries: {[today]: entries},
-      history: hist,
-      receptar: ls("saved_foods",[]),
-      aktivity: ls("act_log",[]),
-      weight_log: ls("weight_log",[])
-    };
-
-    const controller = new AbortController();
-    const timeout = setTimeout(()=>controller.abort(), 30000); // 30s timeout
-
-    const resp = await fetch(backendUrl+"/sync", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(body),
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-
-    if(!resp.ok) throw new Error("HTTP "+resp.status);
-    const data = await resp.json();
-
-    // Aplikuj profil ze serveru - server má přednost pro všechna data
-    if(data.profile && Object.keys(data.profile).length > 0){
-      const localUsername = localStorage.getItem("_sync_username") || profile.syncUsername || "";
-      // Gemini klíč - vyhraje novější timestamp
-      const localTs = profile.geminiKeyTs || 0;
-      const serverTs = data.profile.geminiKeyTs || 0;
-      const winningKey = serverTs >= localTs
-        ? (data.profile.geminiKey || profile.geminiKey || "")
-        : (profile.geminiKey || data.profile.geminiKey || "");
-      const winningKeyTs = Math.max(localTs, serverTs);
-
-      // Vezmi vše ze serveru, zachovej jen lokální sync nastavení a gemini klíč
-      const newProfile = {
-        ...data.profile,
-        geminiKey: winningKey,
-        geminiKeyTs: winningKeyTs,
-        backendUrl: BACKEND_URL,
-        syncUsername: localUsername,
-      };
-      sv("prof2", newProfile);
-      // Načti znovu z localStorage - stejně jako jídla
-      profile = ls("prof2", newProfile);
-      if(profile.fontSize) applyFontSize(profile.fontSize);
-    }
-
-    // Aplikuj historii - remote má přednost pro starší dny
-    if(data.history){
-      hist = {...hist, ...data.history}; // remote přepisuje lokální (správně!)
-      sv("hist2", hist);
-    }
-
-    // Přijmi VŠECHNY záznamy pro dnešek ze serveru (merge)
-    if(data.entries){
-      const remoteToday = data.entries[today] || [];
-      if(remoteToday.length > 0){
-        const localIds = new Set(entries.map(e=>e.id));
-        const newFromRemote = remoteToday.filter(e=>!localIds.has(e.id));
-        if(newFromRemote.length){
-          entries = [...entries, ...newFromRemote];
-          sv("ent_"+today, entries);
-        }
-      }
-    }
-
-    // Přijmi nová uložená jídla
-    if(data.receptar && data.receptar.length > 0){
-      const localSaved = ls("saved_foods",[]);
-      const localNames = new Set(localSaved.map(f=>f.jidlo));
-      const newFoods = data.receptar.filter(f=>!localNames.has(f.jidlo));
-      if(newFoods.length) sv("saved_foods",[...localSaved,...newFoods]);
-    }
-
-    // Vyčisti staré _del záznamy (starší než 24h) - nepotřebujeme je dál
-    const oneDayAgo = Date.now() - 86400000;
-    entries = entries.filter(e => !e._del || (e._t||0) > oneDayAgo);
-    sv("ent_" + today, entries);
-    sv("last_sync_time", Date.now());
-    // Vynutit znovu načtení profilu - resetuj inputy
-    if(profTab === "zakladni" || profTab === "hubnuti"){
-      profTab = profTab; // zachovej tab ale vynutí render
-    }
-    render(); // vždy překresli po syncu
-    // Explicitně nastav hodnoty profil inputů (prohlížeč si pamatuje staré hodnoty)
-    ["vyska","vaha","cilVaha","vek"].forEach(key=>{
-      const el = document.getElementById("prof-inp-"+key);
-      if(el) el.value = profile[key] || "";
-    });
-    // Aktualizuj všechny inputy v API sekci
-    const _keyInp = document.getElementById("gemini-key-inp");
-    if(_keyInp && profile.geminiKey) _keyInp.value = profile.geminiKey;
-    const _proxyInp = document.getElementById("proxy-url-inp");
-    if(_proxyInp) _proxyInp.value = profile.proxyUrl || "";
-    const _syncUser = document.getElementById("sync-username");
-    if(_syncUser) _syncUser.value = profile.syncUsername || "";
-    const _syncBackend = document.getElementById("sync-backend-url");
-    if(_syncBackend) _syncBackend.value = profile.backendUrl || "";
-    const _vodaInp = document.querySelector("input[onblur*='vodaCil']");
-    if(_vodaInp) _vodaInp.value = profile.vodaCil || Math.round((profile.vaha||80)*35);
-    setSyncStatus("☁️ " + new Date().toLocaleTimeString("cs-CZ",{hour:"2-digit",minute:"2-digit"}) + " · " + entries.filter(e=>!e._del).length + " jídel · váha: " + profile.vaha + "kg");
-  }catch(e){
-    console.warn("Sync chyba:", e.message);
-    if(e.name === "AbortError"){
-      // Server se probouzel, zkus znovu po 5s
-      if(!_retry){
-        setToast("⏳ Server se probouzí, čekám…");
-        setTimeout(()=>syncWithServer({}, true), 5000);
-      } else {
-        setToast("⚠️ Server nereaguje – zkus znovu");
-      }
-    } else {
-      setToast("⚠️ Sync selhal: "+e.message);
-    }
-  }
-}
-
-function scheduleSync(){
-  clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(()=>syncWithServer({}), 3000);
-}
-
-function saveSyncConfig(){
-  const username = (document.getElementById("sync-username")||{}).value?.trim();
-  if(!username){ setToast("Zadej uživatelské jméno"); return; }
-  localStorage.setItem("_sync_username", username);
-  profile = {...profile, syncUsername: username, backendUrl: BACKEND_URL};
-  sv("prof2", profile);
-  render();
-  testSync(username);
-}
-
 async function doSync(){
   const username = (localStorage.getItem("_sync_username") || profile.syncUsername || "").trim();
-  if(!username) return;
-  setSyncStatus("🔄 Synchronizuji…");
-
+  if(!username){ return; }
+  setToast("🔄 Synchronizuji data…");
   const today = TODAY();
-
   try {
-    // KROK 1: Stáhni kompletní data ze serveru
     const getR = await fetch(BACKEND_URL + "/data/user_" + username.toLowerCase());
     if(!getR.ok) throw new Error("GET " + getR.status);
     const serverData = await getR.json();
 
-    // KROK 2: Profil - vyhraje novější _profileTs
     if(serverData.profile && Object.keys(serverData.profile).length > 0){
       const serverTs = serverData.profile._profileTs || 0;
       const localTs = profile._profileTs || 0;
-      if(serverTs > localTs){
-        const localUsername = localStorage.getItem("_sync_username") || profile.syncUsername || "";
-        const serverKeyTs = serverData.profile.geminiKeyTs || 0;
-        const localKeyTs = profile.geminiKeyTs || 0;
-        const winningKey = localKeyTs > serverKeyTs
-          ? profile.geminiKey
-          : (serverData.profile.geminiKey || profile.geminiKey || "");
-        const winningKeyTs = Math.max(localKeyTs, serverKeyTs);
-        profile = {
-          ...serverData.profile,
-          geminiKey: winningKey,
-          geminiKeyTs: winningKeyTs,
-          backendUrl: BACKEND_URL,
-          syncUsername: localUsername,
-        };
+      const localUsername = localStorage.getItem("_sync_username") || profile.syncUsername || "";
+      const serverKeyTs = serverData.profile.geminiKeyTs || 0;
+      const localKeyTs = profile.geminiKeyTs || 0;
+      const winningKey = localKeyTs >= serverKeyTs
+        ? (profile.geminiKey || serverData.profile.geminiKey || "")
+        : (serverData.profile.geminiKey || profile.geminiKey || "");
+      const winningKeyTs = Math.max(localKeyTs, serverKeyTs);
+
+      if(serverTs > localTs || localTs <= 1){
+        profile = { ...serverData.profile, geminiKey: winningKey, geminiKeyTs: winningKeyTs, backendUrl: BACKEND_URL, syncUsername: localUsername };
         sv("prof2", profile);
         if(profile.fontSize) applyFontSize(profile.fontSize);
+      } else {
+        profile = {...profile, geminiKey: winningKey, geminiKeyTs: winningKeyTs};
+        sv("prof2", profile);
       }
     }
 
-    // KROK 3: Jídla - merge podle _t
     const serverToday = (serverData.entries || {})[today] || [];
     const localMap = new Map(entries.map(e => [String(e.id), e]));
     for(const se of serverToday){
@@ -1737,23 +1730,9 @@ async function doSync(){
       if(!local) localMap.set(key, se);
       else if((se._t||0) > (local._t||0)) localMap.set(key, se);
     }
-    const mergedEntries = Array.from(localMap.values());
-    entries = mergedEntries;
+    entries = Array.from(localMap.values());
     sv("ent_" + today, entries);
 
-    // KROK 4: Váha - merge podle data a _t
-    if(serverData.weight_log && serverData.weight_log.length){
-      const localW = ls("weight_log", []);
-      const mergedW = [...localW];
-      for(const sw of serverData.weight_log){
-        const idx = mergedW.findIndex(lw => lw.d === sw.d);
-        if(idx === -1) mergedW.push(sw);
-        else if((sw._t||0) > (mergedW[idx]._t||0)) mergedW[idx] = sw;
-      }
-      sv("weight_log", mergedW.sort((a,b)=>a.d.localeCompare(b.d)));
-    }
-
-    // KROK 5: Aktivity - merge podle id a _t
     if(serverData.aktivity && serverData.aktivity.length){
       const localA = ls("act_log", []);
       const mergedA = [...localA];
@@ -1765,7 +1744,6 @@ async function doSync(){
       sv("act_log", mergedA);
     }
 
-    // KROK 6: Receptář
     if(serverData.receptar && serverData.receptar.length){
       const local = ls("saved_foods", []);
       const names = new Set(local.map(f => f.jidlo));
@@ -1773,154 +1751,160 @@ async function doSync(){
       if(newF.length) sv("saved_foods", [...local, ...newF]);
     }
 
-    // KROK 7: Historie
-    if(serverData.history){
-      hist = {...hist, ...serverData.history};
-      sv("hist2", hist);
-    }
+    if(serverData.history){ hist = {...hist, ...serverData.history}; sv("hist2", hist); }
 
-    // KROK 8: Odešli merged data na server
     const postR = await fetch(BACKEND_URL + "/sync", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
-        device_id: DEVICE_ID,
-        username: username,
+        device_id: DEVICE_ID, username,
         profile: {...profile, _profileTs: profile._profileTs || Date.now()},
-        entries: {[today]: mergedEntries},
+        entries: {[today]: entries},
         history: hist,
         receptar: ls("saved_foods", []),
         aktivity: ls("act_log", []),
         weight_log: ls("weight_log", [])
       })
     });
-
     if(!postR.ok) throw new Error("POST " + postR.status);
 
-    // Vyčisti staré _del záznamy
     const oneDayAgo = Date.now() - 86400000;
     entries = entries.filter(e => !e._del || (e._t||0) > oneDayAgo);
     sv("ent_" + today, entries);
-
     sv("last_sync_time", Date.now());
+    _dirty = false;
+    _lastSyncHash = _stateHash();
     render();
 
-    // Explicitně nastav hodnoty profil inputů po syncu
     requestAnimationFrame(()=>{
       ["vyska","vaha","cilVaha","vek"].forEach(key=>{
         const el = document.getElementById("prof-inp-"+key);
-        if(el) el.value = profile[key] || "";
+        if(el){ el.value = ""; el.value = profile[key] || ""; }
       });
       const ki = document.getElementById("gemini-key-inp");
-      if(ki && profile.geminiKey) ki.value = profile.geminiKey;
+      if(ki){ ki.value = ""; ki.value = profile.geminiKey || ""; }
+      const su = document.getElementById("sync-username");
+      if(su){ su.value = ""; su.value = profile.syncUsername || ""; }
     });
 
     setSyncStatus("☁️ " + new Date().toLocaleTimeString("cs-CZ",{hour:"2-digit",minute:"2-digit"}) + " · " + entries.filter(e=>!e._del).length + " jídel · váha: " + profile.vaha + "kg");
-
   } catch(e){
     console.warn("Sync chyba:", e.message);
     setSyncStatus("⚠️ " + e.message);
-    if(e.name === "AbortError"){
-      setSyncStatus("⏳ Server se probouzí…");
-      setTimeout(()=>doSync(), 5000);
-    }
   }
 }
 
+function syncWithServer(push={}, retry=false){ doSync(); }
 
-function testSync(username){ doSync(); }
+function saveSyncConfig(){
+  const username = (document.getElementById("sync-username")||{}).value?.trim();
+  if(!username){ setToast("⚠️ Zadej uživatelské jméno"); return; }
+  localStorage.setItem("_sync_username", username);
+  profile = {...profile, syncUsername: username, backendUrl: BACKEND_URL};
+  sv("prof2", profile);
+  setToast("✅ Uživatelské jméno uloženo · synchronizuji…");
+  render();
+  doSync();
+}
 
 async function pushProfile(){
   const username = (localStorage.getItem("_sync_username")||"").trim();
   if(!username){ setToast("Nastav username"); return; }
-  setSyncStatus("⬆️ Nahrávám profil…");
-  // Nastav vysoký timestamp aby vyhrál nad vším
   profile._profileTs = Date.now();
   sv("prof2", profile);
   try {
     const r = await fetch(BACKEND_URL + "/sync", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        device_id: DEVICE_ID,
-        username: username,
-        profile: profile,
-        entries: {[TODAY()]: entries},
-        history: hist,
-        receptar: ls("saved_foods",[]),
-        aktivity: ls("act_log",[]),
-        weight_log: ls("weight_log",[])
-      })
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ device_id: DEVICE_ID, username, profile, entries: {[TODAY()]: entries}, history: hist, receptar: ls("saved_foods",[]), aktivity: ls("act_log",[]), weight_log: ls("weight_log",[]) })
     });
     if(!r.ok) throw new Error("HTTP "+r.status);
-    setSyncStatus("✅ Profil nahrán · váha: "+profile.vaha+"kg · API: "+(profile.geminiKey?"✓":"✗"));
+    setSyncStatus("✅ Profil nahrán · váha: "+profile.vaha+"kg");
     setToast("✅ Profil nahrán na server");
-  } catch(e) {
-    setToast("❌ "+e.message);
-  }
+  } catch(e) { setToast("❌ "+e.message); }
 }
 
 async function forceDownload(){
   const username = (localStorage.getItem("_sync_username")||"").trim();
-  if(!username){ setToast("Nastav username"); return; }
+  if(!username){ setToast("⚠️ Nastav username"); return; }
+  setToast("⏳ Stahuji ze serveru…");
+  setSyncStatus("⏳ Stahuji profil…");
   try {
-    const r = await fetch(BACKEND_URL + "/data/user_" + username.toLowerCase());
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(), 15000);
+    const r = await fetch(BACKEND_URL + "/data/user_" + username.toLowerCase() + "?v=" + Date.now(), {signal: controller.signal});
+    clearTimeout(timeout);
     if(!r.ok) throw new Error("HTTP "+r.status);
     const serverData = await r.json();
-    if(serverData.profile && Object.keys(serverData.profile).length > 0){
-      const localUsername = localStorage.getItem("_sync_username") || username;
-      const oldKey = profile.geminiKey;
-      profile = {
-        ...serverData.profile,
-        geminiKey: oldKey || serverData.profile.geminiKey || "",
-        backendUrl: BACKEND_URL,
-        syncUsername: localUsername,
-      };
-      sv("prof2", profile);
-      if(profile.fontSize) applyFontSize(profile.fontSize);
+    if(!serverData.profile || Object.keys(serverData.profile).length === 0){
+      setToast("⚠️ Server nemá profil pro: " + username);
+      setSyncStatus("⚠️ Profil nenalezen na serveru");
+      return;
     }
-    if(serverData.weight_log) sv("weight_log", serverData.weight_log);
-    if(serverData.aktivity){
-      sv("act_log", serverData.aktivity);
-    }
+    const localUsername = localStorage.getItem("_sync_username") || username;
+    const winningKey = serverData.profile.geminiKey || profile.geminiKey || "";
+    profile = { ...serverData.profile, geminiKey: winningKey, geminiKeyTs: serverData.profile.geminiKeyTs || profile.geminiKeyTs || 0, backendUrl: BACKEND_URL, syncUsername: localUsername, _profileTs: (serverData.profile._profileTs || Date.now()) + 1 };
+    sv("prof2", profile);
+    if(profile.fontSize) applyFontSize(profile.fontSize);
+    if(serverData.weight_log && serverData.weight_log.length) sv("weight_log", serverData.weight_log);
+    if(serverData.aktivity && serverData.aktivity.length) sv("act_log", serverData.aktivity);
+    if(serverData.history){ hist = serverData.history; sv("hist2", hist); }
     render();
-    requestAnimationFrame(()=>{
-      ["vyska","vaha","cilVaha","vek"].forEach(key=>{
-        const el = document.getElementById("prof-inp-"+key);
-        if(el) el.value = profile[key] || "";
-      });
-    });
-    setToast("✅ Profil stažen ze serveru · váha: "+profile.vaha+"kg");
+    setTimeout(()=>{
+      ["vyska","vaha","cilVaha","vek"].forEach(key=>{ const el=document.getElementById("prof-inp-"+key); if(el){el.value="";el.value=profile[key]||"";} });
+      const ki=document.getElementById("gemini-key-inp"); if(ki){ki.value="";ki.value=profile.geminiKey||"";}
+    }, 100);
+    setToast("✅ Staženo · váha: " + profile.vaha + "kg · API: " + (profile.geminiKey ? "✓" : "✗"));
+    setSyncStatus("📥 Staženo · " + new Date().toLocaleTimeString("cs-CZ",{hour:"2-digit",minute:"2-digit"}));
   } catch(e) {
-    setToast("❌ "+e.message);
+    if(e.name==="AbortError"){
+      setToast("⚠️ Timeout – server nereaguje (Render se probouzí, zkus za 30s)");
+      setSyncStatus("⚠️ Timeout – zkus znovu za 30s");
+    } else {
+      setToast("❌ Stažení selhalo: " + e.message);
+      setSyncStatus("❌ " + e.message);
+    }
   }
 }
 
 async function debugProfile(){
   const username = (localStorage.getItem("_sync_username")||"").trim();
-  if(!username){ setToast("Nastav username"); return; }
+  if(!username){ setToast("⚠️ Nastav username"); return; }
+  setToast("🔍 Načítám debug info…");
   try {
-    const r = await fetch(BACKEND_URL + "/data/user_" + username.toLowerCase());
+    const r = await fetch(BACKEND_URL + "/data/user_" + username.toLowerCase() + "?v=" + Date.now());
     const data = await r.json();
     const sp = data.profile || {};
     const lp = profile;
+    const sw = (data.weight_log||[]).slice(-3).map(e=>e.d+":"+e.w+"kg").join(", ")||"prázdný";
     const msg = [
-      "=== SERVER PROFIL ===",
-      "váha: " + sp.vaha,
-      "geminiKey: " + (sp.geminiKey ? sp.geminiKey.slice(0,8)+"..." : "prázdný"),
-      "profileTs: " + (sp._profileTs || 0),
-      "=== LOKÁLNÍ PROFIL ===",
-      "váha: " + lp.vaha,
-      "geminiKey: " + (lp.geminiKey ? lp.geminiKey.slice(0,8)+"..." : "prázdný"),
-      "profileTs: " + (lp._profileTs || 0),
-    ].join("\n");
-    alert(msg);
-  } catch(e) {
-    alert("Chyba: " + e.message);
-  }
+      "SERVER: váha="+sp.vaha+"kg výška="+sp.vyska+"cm",
+      "SERVER: geminiKey="+(sp.geminiKey?sp.geminiKey.slice(0,8)+"...":"∅"),
+      "SERVER: profileTs="+new Date(sp._profileTs||0).toLocaleString("cs-CZ"),
+      "SERVER: weight_log="+sw,
+      "LOKÁL: váha="+lp.vaha+"kg výška="+lp.vyska+"cm",
+      "LOKÁL: geminiKey="+(lp.geminiKey?lp.geminiKey.slice(0,8)+"...":"∅"),
+      "LOKÁL: profileTs="+(lp._profileTs||0),
+    ].join(" | ");
+    setToast("🔍 "+msg.slice(0,120));
+    alert(["=== SERVER PROFIL ===","váha: "+sp.vaha,"výška: "+sp.vyska,"geminiKey: "+(sp.geminiKey?sp.geminiKey.slice(0,8)+"...":"prázdný"),"profileTs: "+new Date(sp._profileTs||0).toLocaleString("cs-CZ"),"weight_log: "+sw,"=== LOKÁLNÍ PROFIL ===","váha: "+lp.vaha,"výška: "+lp.vyska,"geminiKey: "+(lp.geminiKey?lp.geminiKey.slice(0,8)+"...":"prázdný"),"profileTs: "+(lp._profileTs||0)].join("\n"));
+  } catch(e) { setToast("❌ Debug selhal: " + e.message); }
 }
-function syncWithServer(push={}, retry=false){ doSync(); }
-function scheduleSync(){ clearTimeout(syncTimeout); syncTimeout = setTimeout(doSync, 2000); }
+
+function saveProxyUrl(){
+  const inp=document.getElementById("proxy-url-inp"); if(!inp)return;
+  const url=inp.value.trim().replace(/\/$/,"");
+  profile={...profile,proxyUrl:url}; sv("prof2",profile);
+  setToast(url?"✅ Proxy URL uložena!":"🗑 Proxy URL smazána");
+  render();
+}
+function clearProxy(){ profile={...profile,proxyUrl:""}; sv("prof2",profile); setToast("🗑 Proxy URL smazána"); render(); }
+function setFontSize(size){
+  profile={...profile,fontSize:size}; sv("prof2",profile);
+  applyFontSize(size);
+  const labels={0.85:"Malé",1.0:"Normální",1.15:"Větší",1.3:"Velké"};
+  setToast("🔤 Velikost písma: "+(labels[size]||size));
+  render();
+}
 
 // ── EAN Scanner ───────────────────────────────────────────────────────────────
 let _scanStream=null;
@@ -1950,12 +1934,7 @@ async function startBarcodeDetection(){
   while(_scanStream && vid.readyState>=2){
     try{
       const codes=await detector.detect(vid);
-      if(codes.length){
-        _scanActive=false;
-        closeScanner(); openAdd(); setMode("ean");
-        lookupBarcode(codes[0].rawValue);
-        return;
-      }
+      if(codes.length){ _scanActive=false; closeScanner(); openAdd(); setMode("ean"); lookupBarcode(codes[0].rawValue); return; }
     }catch(_){}
     await new Promise(r=>setTimeout(r,300));
   }
@@ -1969,7 +1948,6 @@ async function handleEan(){
 
 async function lookupBarcode(code){
   clearMsg();
-  const statusEl=document.getElementById("add-err");
   try{
     showErr("Hledám produkt…");
     const r=await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
@@ -1996,29 +1974,252 @@ async function lookupBarcode(code){
   }catch(e){showErr("Chyba: "+e.message);}
 }
 
+// ── AUTO-ROLLOVER: přesuň stará jídla do historie automaticky ────────────────
+function autoRollover() {
+  const today = TODAY();
+  let changed = false;
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('ent_') && k !== 'ent_' + today) {
+      keys.push(k);
+    }
+  }
+  keys.forEach(key => {
+    const date = key.replace('ent_', '');
+    // Jen validní datum YYYY-MM-DD
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    try {
+      const dayEntries = JSON.parse(localStorage.getItem(key) || '[]');
+      const valid = dayEntries.filter(e => !e._del);
+      if (valid.length > 0 && !hist[date]) {
+        hist[date] = valid;
+        changed = true;
+      }
+      // Smaž starý klíč – data jsou bezpečně v hist
+      localStorage.removeItem(key);
+    } catch (_) {}
+  });
+  if (changed) {
+    sv('hist2', hist);
+  }
+}
+
 // ── Spuštění ──────────────────────────────────────────────────────────────────
-// Obnov sync username z odděleného úložiště
 const _savedUsername = localStorage.getItem("_sync_username");
 if(_savedUsername) profile.syncUsername = _savedUsername;
-// Pokud profil nemá timestamp, nastav ho teď
-if(!profile._profileTs){ profile._profileTs = Date.now(); sv("prof2", profile); }
+if(!profile._profileTs){ profile._profileTs = 1; sv("prof2", profile); }
 if(profile.fontSize) applyFontSize(profile.fontSize);
 setTimeout(()=>{const s=document.getElementById("splash");if(s&&s.style.display!=="none"){s.style.opacity=0;setTimeout(()=>s.style.display="none",400);render();}},5000);
-loadFoodDB().then(()=>{ render(); return syncWithServer({}); }).catch(err=>{console.error(err);render();});
+
+// ← OPRAVA: autoRollover se volá před načtením DB a renderem
+autoRollover();
+loadFoodDB().then(()=>{ render(); return doSync(); }).catch(err=>{console.error(err);render();});
 if(profile.notifEnabled) scheduleNotification();
 
-// Auto-sync každých 30 sekund
+// ── Auto-sync ─────────────────────────────────────────────────────────────────
+let _dirty = false;
+let _lastSyncHash = "";
+
+function _stateHash(){
+  const e = entries.filter(e=>!e._del).length;
+  const p = (profile._profileTs||0) + "|" + (profile.vaha||0) + "|" + (profile.geminiKey||"").slice(0,8);
+  const h = Object.keys(hist).length;
+  const w = ls("weight_log",[]).length;
+  const a = ls("act_log",[]).length;
+  return e+"|"+p+"|"+h+"|"+w+"|"+a;
+}
+
+function markDirty(){ _dirty = true; }
+
+function scheduleSync(){
+  clearTimeout(syncTimeout);
+  markDirty();
+  syncTimeout = setTimeout(doSync, 2000);
+}
+
 setInterval(()=>{
   const username = (localStorage.getItem("_sync_username")||"").trim();
-  if(username) doSync();
+  if(!username) return;
+  const hash = _stateHash();
+  if(_dirty || hash !== _lastSyncHash){ _dirty = false; _lastSyncHash = hash; doSync(); }
 }, 30000);
 
-// Force update service workeru při každém načtení
+setInterval(()=>{
+  const username = (localStorage.getItem("_sync_username")||"").trim();
+  if(!username) return;
+  doSync();
+}, 5 * 60 * 1000);
+
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(regs=>{
-    regs.forEach(reg=>reg.update());
+  navigator.serviceWorker.getRegistrations().then(regs=>{ regs.forEach(reg=>reg.update()); });
+}
+
+function applyFontSize(size){
+  const scale = parseFloat(size)/1.0;
+  document.documentElement.style.setProperty("--fs-xs",   (10*scale)+"px");
+  document.documentElement.style.setProperty("--fs-sm",   (12*scale)+"px");
+  document.documentElement.style.setProperty("--fs-base", (14*scale)+"px");
+  document.documentElement.style.setProperty("--fs-md",   (15*scale)+"px");
+  document.documentElement.style.setProperty("--fs-lg",   (16*scale)+"px");
+  document.documentElement.style.setProperty("--fs-xl",   (18*scale)+"px");
+  document.documentElement.style.setProperty("--fs-xxl",  (24*scale)+"px");
+}
+
+// ── Denní report ──────────────────────────────────────────────────────────────
+function showDailyReport(date){
+  const d = date || TODAY();
+  const items = d === TODAY() ? entries.filter(e=>!e._del) : (hist[d]||[]);
+  const tg = targets();
+  const kcal = items.reduce((a,e)=>a+(e.kcal||0),0);
+  const b = items.reduce((a,e)=>a+(e.b||0),0);
+  const s = items.reduce((a,e)=>a+(e.s||0),0);
+  const t = items.reduce((a,e)=>a+(e.t||0),0);
+  const vl = items.reduce((a,e)=>a+(e.vl||0),0);
+  const voda = items.filter(e=>e.isWater||isLiquid(e.jidlo)).reduce((a,e)=>a+(e.porce_g||0),0);
+  const bySlot = {};
+  items.forEach(e=>{ if(!bySlot[e.slot])bySlot[e.slot]=[]; bySlot[e.slot].push(e); });
+  let text = `📋 DENNÍ REPORT — ${d}\n${"─".repeat(40)}\n`;
+  SLOTS.forEach(slot=>{
+    const slotItems = bySlot[slot];
+    if(!slotItems||!slotItems.length) return;
+    const slotKcal = Math.round(slotItems.reduce((a,e)=>a+(e.kcal||0),0));
+    text += `\n🍽 ${slot.toUpperCase()} (${slotKcal} kcal)\n`;
+    slotItems.forEach(e=>{
+      const liquid = e.isWater||isLiquid(e.jidlo);
+      text += `  • ${e.jidlo}\n    ${e.porce_g}${liquid?"ml":"g"} · ${Math.round(e.kcal)} kcal · B:${(e.b||0).toFixed(1)}g · S:${(e.s||0).toFixed(1)}g · T:${(e.t||0).toFixed(1)}g`;
+      if(e.vl) text += ` · Vl:${(e.vl).toFixed(1)}g`;
+      text += "\n";
+    });
   });
+  text += `\n${"─".repeat(40)}\n📊 CELKEM\n`;
+  text += `  Kalorie:   ${Math.round(kcal)} / ${tg.cilKcal} kcal (${Math.round(kcal/tg.cilKcal*100)}%)\n`;
+  text += `  Bílkoviny: ${b.toFixed(1)} / ${tg.protein} g\n`;
+  text += `  Sacharidy: ${s.toFixed(1)} / ${tg.sacharidy} g\n`;
+  text += `  Tuky:      ${t.toFixed(1)} / ${tg.tuky} g\n`;
+  text += `  Vláknina:  ${vl.toFixed(1)} / ${tg.vlaknina} g\n`;
+  text += `  Tekutiny:  ${Math.round(voda)} / ${tg.voda} ml\n`;
+  text += `\n📋 Počet jídel: ${items.length}\n💡 Generováno aplikací Kalorie AI`;
+  const modal = document.getElementById("report-modal");
+  const textarea = document.getElementById("report-text");
+  const title = document.getElementById("report-title");
+  if(title) title.textContent = "📋 Report — " + d;
+  if(textarea) textarea.value = text;
+  if(modal) modal.style.display = "flex";
+}
+
+function showReportPicker(){
+  const days = Object.keys(hist).sort((a,b)=>b.localeCompare(a));
+  if(!days.length){ showDailyReport(); return; }
+  const day = prompt("Zadej datum (YYYY-MM-DD):\n\nDostupné dny:\n" + [TODAY(),...days].slice(0,10).join("\n"), TODAY());
+  if(day) showDailyReport(day);
+}
+
+function closeReport(){ const m=document.getElementById("report-modal"); if(m)m.style.display="none"; }
+
+function copyReport(){
+  const ta=document.getElementById("report-text"); if(!ta)return;
+  ta.select(); ta.setSelectionRange(0,99999);
+  try{ navigator.clipboard.writeText(ta.value).then(()=>setToast("✓ Zkopírováno!")).catch(()=>{document.execCommand("copy");setToast("✓ Zkopírováno!");}); }
+  catch(e){ document.execCommand("copy"); setToast("✓ Zkopírováno!"); }
+}
+
+function downloadReport(){
+  const ta=document.getElementById("report-text"); if(!ta)return;
+  const blob=new Blob([ta.value],{type:"text/plain;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download="kalorie-report-"+TODAY()+".txt"; a.click();
+  URL.revokeObjectURL(url); setToast("✓ Staženo!");
 }
 </script>
+
+<!-- REPORT MODAL -->
+<div id="report-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeReport()">
+  <div style="width:100%;max-width:640px;background:var(--card);border-radius:20px 20px 0 0;padding:20px;max-height:90dvh;display:flex;flex-direction:column;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0">
+      <span id="report-title" style="font-size:16px;font-weight:800;color:var(--text)">📋 Report</span>
+      <button onclick="closeReport()" style="background:var(--surface);border:none;border-radius:8px;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 10px">×</button>
+    </div>
+    <textarea id="report-text" readonly style="flex:1;min-height:300px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:12px;font-family:monospace;padding:12px;resize:none;line-height:1.6;overflow-y:auto"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-shrink:0">
+      <button onclick="copyReport()" style="flex:1;padding:13px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:14px;cursor:pointer">📋 Kopírovat</button>
+      <button onclick="downloadReport()" style="flex:1;padding:13px;background:linear-gradient(135deg,#0f766e,#0d9488);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:14px;cursor:pointer">⬇️ Stáhnout .txt</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PITÍ -->
+<div id="drink-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:400;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeAddDrink()">
+  <div style="width:100%;max-width:500px;background:var(--card);border-radius:20px 20px 0 0;padding:20px;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:17px;font-weight:800">💧 Zapsat pití</span>
+      <button onclick="closeAddDrink()" style="background:var(--surface);border:none;border-radius:8px;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 10px">×</button>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;margin-bottom:8px">RYCHLÉ PŘIDÁNÍ</div>
+    <div id="drink-quick-btns" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;margin-bottom:8px">KDY JSI TO PIL/A</div>
+    <div id="drink-slot-btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;margin-bottom:8px">VLASTNÍ</div>
+    <input id="drink-name-inp" class="inp" placeholder="Název nápoje…" style="margin-bottom:8px"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">MNOŽSTVÍ (ml)</label>
+        <input id="drink-ml-inp" class="inp" type="number" value="250" min="1"/>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">KALORIE (kcal)</label>
+        <input id="drink-kcal-inp" class="inp" type="number" value="0" min="0"/>
+      </div>
+    </div>
+    <button onclick="saveDrinkModal()" style="width:100%;padding:13px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:14px;cursor:pointer">💧 Přidat nápoj</button>
+  </div>
+</div>
+
+<!-- MODAL AKTIVITA -->
+<div id="activity-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:400;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeAddActivity()">
+  <div style="width:100%;max-width:500px;background:var(--card);border-radius:20px 20px 0 0;padding:20px;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:17px;font-weight:800">🏃 Zapsat aktivitu</span>
+      <button onclick="closeAddActivity()" style="background:var(--surface);border:none;border-radius:8px;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 10px">×</button>
+    </div>
+    <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;display:block;margin-bottom:6px">AKTIVITA</label>
+    <select id="act-modal-select" class="inp" style="margin-bottom:12px" onchange="updateActPreview()"></select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">TRVÁNÍ (min)</label>
+        <input id="act-modal-min" class="inp" type="number" value="30" min="1" max="600" oninput="updateActPreview()"/>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">VÝDEJ</label>
+        <div id="act-modal-preview" style="padding:11px 13px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:18px;font-weight:800;color:#22c55e">–– kcal</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveActivityModal()" style="flex:1;padding:13px;background:linear-gradient(135deg,#22c55e,#15803d);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:14px;cursor:pointer">✅ Zapsat aktivitu</button>
+      <button onclick="closeAddActivity()" style="padding:13px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-weight:600;cursor:pointer">Zavřít</button>
+    </div>
+  </div>
+</div>
+<div id="weight-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:400;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeAddWeight()">
+  <div style="width:100%;max-width:360px;background:var(--card);border-radius:20px;padding:24px;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <span style="font-size:17px;font-weight:800">⚖️ Zapsat hmotnost</span>
+      <button onclick="closeAddWeight()" style="background:var(--surface);border:none;border-radius:8px;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 10px">×</button>
+    </div>
+    <label style="font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px">HMOTNOST</label>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+      <input id="weight-modal-inp" class="inp" type="number" step="0.1" min="20" max="300"
+        style="font-size:28px;font-weight:800;text-align:center"
+        onkeydown="if(event.key==='Enter')saveWeightModal()"/>
+      <span style="font-size:18px;font-weight:700;color:var(--muted)">kg</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px">Datum: <b id="weight-modal-date"></b></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveWeightModal()" style="flex:1;padding:13px;background:linear-gradient(135deg,#f97316,#c2410c);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:14px;cursor:pointer">Zapsat</button>
+      <button onclick="closeAddWeight()" style="flex:1;padding:13px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer">Zavřít</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
