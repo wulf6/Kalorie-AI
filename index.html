@@ -92,6 +92,11 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s}
   .sheet{height:100dvh;max-height:100dvh;border-radius:0;padding:12px 16px}
   .sticky-header .tab-btn{padding:8px 12px;font-size:12px}
 }
+/* Tablet landscape */
+@media (orientation:landscape) and (min-width:600px){
+  .sticky-header{display:flex;flex-wrap:nowrap}
+  #app > div > div:first-child{position:sticky;top:0;z-index:100}
+}
 
 @media (min-width:768px){
   :root{--sheet-radius:16px;--fab-bottom:32px}
