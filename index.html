@@ -17,8 +17,8 @@
 <title>Kalorie</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overscroll-behavior:none;font-family:system-ui,-apple-system,sans-serif}
-button,input,select,textarea{font-family:inherit}
+html,body{height:100%;overscroll-behavior:none;font-family:system-ui,-apple-system,sans-serif;font-size:14px}
+button,input,select,textarea{font-family:inherit;font-size:inherit}
 button:active{opacity:.82}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -28,12 +28,42 @@ input[type=number]::-webkit-inner-spin-button{opacity:1}
 :root{
   --bg:#f1f5f9;--card:#fff;--surface:#f1f5f9;--border:#e2e8f0;
   --text:#1e293b;--muted:#6b7280;--track:#e2e8f0;
+  --accent:#6366f1;--accent2:#8b5cf6;
   --sheet-radius:20px 20px 0 0;
   --fab-bottom:24px;
   --top-safe:env(safe-area-inset-top,0px);
   --bot-safe:env(safe-area-inset-bottom,0px);
   --fs-xs:10px;--fs-sm:12px;--fs-base:14px;--fs-md:15px;--fs-lg:16px;--fs-xl:18px;--fs-xxl:24px;
 }
+/* ── SKINY ── */
+/* Indigo (default) */
+.skin-indigo{--accent:#6366f1;--accent2:#8b5cf6}
+.skin-indigo.dark{--bg:#0a0f1e;--card:#0f172a;--surface:#1e293b;--border:#1e293b;--text:#f1f5f9;--muted:#64748b;--track:#1e293b}
+/* Forest */
+.skin-forest{--bg:#f0fdf4;--card:#fff;--surface:#f0fdf4;--border:#bbf7d0;--text:#14532d;--muted:#6b7280;--track:#bbf7d0;--accent:#16a34a;--accent2:#15803d}
+.skin-forest.dark{--bg:#052e16;--card:#14532d;--surface:#166534;--border:#166534;--text:#f0fdf4;--muted:#86efac;--track:#166534}
+/* Sunset */
+.skin-sunset{--bg:#fff7ed;--card:#fff;--surface:#fff7ed;--border:#fed7aa;--text:#7c2d12;--muted:#9a3412;--track:#fed7aa;--accent:#f97316;--accent2:#ef4444}
+.skin-sunset.dark{--bg:#1c0a00;--card:#431407;--surface:#7c2d12;--border:#7c2d12;--text:#fff7ed;--muted:#fdba74;--track:#7c2d12}
+/* Ocean */
+.skin-ocean{--bg:#f0f9ff;--card:#fff;--surface:#f0f9ff;--border:#bae6fd;--text:#0c4a6e;--muted:#0369a1;--track:#bae6fd;--accent:#0ea5e9;--accent2:#0284c7}
+.skin-ocean.dark{--bg:#0a1628;--card:#0c2340;--surface:#0f3460;--border:#0f3460;--text:#f0f9ff;--muted:#7dd3fc;--track:#0f3460}
+/* Midnight */
+.skin-midnight{--bg:#0d0d0d;--card:#1a1a2e;--surface:#16213e;--border:#0f3460;--text:#e2e8f0;--muted:#64748b;--track:#0f3460;--accent:#e94560;--accent2:#a855f7}
+.skin-midnight.dark{--bg:#0d0d0d;--card:#1a1a2e;--surface:#16213e;--border:#0f3460;--text:#e2e8f0;--muted:#64748b;--track:#0f3460}
+/* Rose */
+.skin-rose{--bg:#fff1f2;--card:#fff;--surface:#fff1f2;--border:#fecdd3;--text:#881337;--muted:#be123c;--track:#fecdd3;--accent:#f43f5e;--accent2:#e11d48}
+.skin-rose.dark{--bg:#1a0010;--card:#4c0519;--surface:#881337;--border:#881337;--text:#fff1f2;--muted:#fda4af;--track:#881337}
+/* Amber */
+.skin-amber{--bg:#fffbeb;--card:#fff;--surface:#fffbeb;--border:#fde68a;--text:#78350f;--muted:#92400e;--track:#fde68a;--accent:#f59e0b;--accent2:#d97706}
+.skin-amber.dark{--bg:#1c1000;--card:#451a03;--surface:#78350f;--border:#78350f;--text:#fffbeb;--muted:#fcd34d;--track:#78350f}
+/* Teal */
+.skin-teal{--bg:#f0fdfa;--card:#fff;--surface:#f0fdfa;--border:#99f6e4;--text:#134e4a;--muted:#0f766e;--track:#99f6e4;--accent:#14b8a6;--accent2:#0d9488}
+.skin-teal.dark{--bg:#001a18;--card:#134e4a;--surface:#0f766e;--border:#0f766e;--text:#f0fdfa;--muted:#5eead4;--track:#0f766e}
+/* Slate */
+.skin-slate{--bg:#f8fafc;--card:#fff;--surface:#f1f5f9;--border:#cbd5e1;--text:#0f172a;--muted:#475569;--track:#cbd5e1;--accent:#475569;--accent2:#334155}
+.skin-slate.dark{--bg:#020617;--card:#0f172a;--surface:#1e293b;--border:#334155;--text:#f8fafc;--muted:#94a3b8;--track:#334155}
+
 @media all and (display-mode: standalone){
   body{ padding-top:var(--top-safe); }
   .sticky-header{ top:var(--top-safe) !important; }
@@ -43,13 +73,13 @@ input[type=number]::-webkit-inner-spin-button{opacity:1}
 body{background:var(--bg);color:var(--text);transition:background .3s,color .3s}
 
 .tab-btn{padding:13px 15px;border:none;background:transparent;font-size:var(--fs-sm);font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
-.tab-btn.active{color:#6366f1;border-bottom-color:#6366f1}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
 
 .card{background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden}
 .inp{background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:var(--fs-base);padding:11px 13px;outline:none;width:100%;transition:border-color .2s}
-.inp:focus{border-color:#6366f1}
+.inp:focus{border-color:var(--accent)}
 .inp::placeholder{color:var(--muted)}
-.btn-pri{background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:12px;color:#fff;font-size:var(--fs-base);font-weight:700;cursor:pointer;padding:13px;width:100%;transition:opacity .2s}
+.btn-pri{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:#fff;font-size:var(--fs-base);font-weight:700;cursor:pointer;padding:13px;width:100%;transition:opacity .2s}
 .btn-pri:disabled{opacity:.4;cursor:not-allowed}
 .prog-bar{background:var(--track);border-radius:99px;height:7px;overflow:hidden}
 .prog-fill{height:100%;border-radius:99px;transition:width .5s ease}
@@ -73,14 +103,14 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s}
 .entry{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:8px;animation:slideUp .22s ease}
 
 .slot-btn{padding:5px 11px;border-radius:99px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .2s}
-.slot-btn.active{border-color:#6366f1;color:#6366f1;font-weight:700}
+.slot-btn.active{border-color:var(--accent);color:var(--accent);font-weight:700}
 .mode-tab{flex:1;padding:8px 4px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-weight:500;cursor:pointer;font-size:12px;transition:all .2s;white-space:nowrap}
-.mode-tab.active{background:#6366f1;color:#fff;font-weight:700}
+.mode-tab.active{background:var(--accent);color:#fff;font-weight:700}
 .tempo-btn{flex:1;padding:9px 4px;border:2px solid var(--border);border-radius:10px;background:var(--surface);color:var(--muted);font-weight:600;cursor:pointer;font-size:11px;text-align:center;line-height:1.5;transition:all .2s}
 .tempo-btn.active{border-color:#f59e0b;background:rgba(245,158,11,.08);color:#92400e}
 .dark .tempo-btn.active{color:#fbbf24}
 .gender-btn{flex:1;padding:10px;border:2px solid var(--border);border-radius:10px;background:var(--surface);color:var(--muted);font-weight:600;cursor:pointer;font-size:14px;transition:all .2s}
-.gender-btn.active{border-color:#6366f1;color:#6366f1}
+.gender-btn.active{border-color:var(--accent);color:var(--accent)}
 @keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes scanline{0%{transform:translateY(-50px);opacity:0}20%{opacity:1}80%{opacity:1}100%{transform:translateY(50px);opacity:0}}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -1057,6 +1087,23 @@ function render(){
         </div>
 
         <div style="padding:14px;background:var(--surface);border-radius:12px;border:1px solid var(--border)">
+          <div style="font-weight:700;font-size:13px;margin-bottom:10px">🎨 Skin / Barevné téma</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            ${(()=>{
+              const SKINS=[['indigo','Indigo','#6366f1','#8b5cf6'],['forest','Forest','#16a34a','#15803d'],['sunset','Sunset','#f97316','#ef4444'],['ocean','Ocean','#0ea5e9','#0284c7'],['midnight','Midnight','#e94560','#a855f7'],['rose','Rose','#f43f5e','#e11d48'],['amber','Amber','#f59e0b','#d97706'],['teal','Teal','#14b8a6','#0d9488'],['slate','Slate','#475569','#334155']];
+              return SKINS.map(([id,name,c1,c2])=>{
+                const active=(profile.skin||'indigo')===id;
+                const border=active?c1:'var(--border)';
+                const shadow=active?'0 0 0 3px '+c1:'none';
+                const fw=active?700:500;
+                const fc=active?c1:'var(--muted)';
+                return '<button onclick="setSkin(\''+id+'\')" style="padding:10px 6px;border:2px solid '+border+';border-radius:12px;background:var(--surface);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .2s"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,'+c1+','+c2+');box-shadow:'+shadow+'"></div><span style="font-size:11px;font-weight:'+fw+';color:'+fc+'">'+name+'</span></button>';
+              }).join('');
+            })()}
+          </div>
+        </div>
+
+        <div style="padding:14px;background:var(--surface);border-radius:12px;border:1px solid var(--border)">
           <div style="font-weight:700;font-size:13px;margin-bottom:10px">🔤 Velikost písma</div>
           <div style="display:flex;gap:6px">
             ${[[0.85,"Malé"],[1.0,"Normální"],[1.15,"Větší"],[1.3,"Velké"]].map(([size,label])=>`
@@ -2015,6 +2062,7 @@ const _savedUsername = localStorage.getItem("_sync_username");
 if(_savedUsername) profile.syncUsername = _savedUsername;
 if(!profile._profileTs){ profile._profileTs = 1; sv("prof2", profile); }
 if(profile.fontSize) applyFontSize(profile.fontSize);
+if(profile.skin) applySkin(profile.skin);
 setTimeout(()=>{const s=document.getElementById("splash");if(s&&s.style.display!=="none"){s.style.opacity=0;setTimeout(()=>s.style.display="none",400);render();}},5000);
 
 // ← OPRAVA: autoRollover se volá před načtením DB a renderem
@@ -2060,8 +2108,28 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(regs=>{ regs.forEach(reg=>reg.update()); });
 }
 
+function applySkin(skin){
+  const skins = ['indigo','forest','sunset','ocean','midnight','rose','amber','teal','slate'];
+  skins.forEach(s => document.body.classList.remove('skin-'+s));
+  if(skin && skin !== 'indigo') document.body.classList.add('skin-'+skin);
+  // midnight je vždy tmavý
+  if(skin === 'midnight' && !dark){ dark=true; document.body.classList.add('dark'); sv('dark2',true); }
+}
+function setSkin(skin){
+  profile = {...profile, skin, _profileTs:Date.now()};
+  sv('prof2', profile);
+  applySkin(skin);
+  const names={indigo:'Indigo',forest:'Forest',sunset:'Sunset',ocean:'Ocean',midnight:'Midnight',rose:'Rose'};
+  setToast('🎨 Skin: '+(names[skin]||skin));
+  render();
+  scheduleSync();
+}
+
 function applyFontSize(size){
-  const scale = parseFloat(size)/1.0;
+  const scale = parseFloat(size) || 1.0;
+  // zoom škáluje vše včetně inline px hodnot
+  document.getElementById("app").style.zoom = scale;
+  // CSS proměnné jako záloha
   document.documentElement.style.setProperty("--fs-xs",   (10*scale)+"px");
   document.documentElement.style.setProperty("--fs-sm",   (12*scale)+"px");
   document.documentElement.style.setProperty("--fs-base", (14*scale)+"px");
