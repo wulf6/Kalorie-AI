@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dnešní přehled</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: radial-gradient(ellipse at 50% 0%, #d4dee8 0%, #c8d4e0 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 16px;
+}
+
+.phone {
+  width: 375px;
+  background: linear-gradient(170deg, #f0f4f8 0%, #e8edf4 100%);
+  border-radius: 52px;
+  box-shadow:
+    0 60px 120px rgba(0,0,0,.22),
+    0 0 0 1.5px rgba(255,255,255,.65) inset,
+    0 3px 0 rgba(255,255,255,.9) inset;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  align-items: center;
+  padding: 32px 26px 8px;
+  position: relative;
+  z-index: 10;
+  animation: up .5s ease both;
+}
+.hamburger { display:flex; flex-direction:column; gap:5px; }
+.hamburger span { display:block; width:20px; height:2px; background:#9aacb8; border-radius:2px; }
+.hamburger span:nth-child(2) { width:14px; }
+.hdr-center { flex:1; text-align:center; }
+.date-lbl { font-size:13px; color:#7a8e9e; font-weight:600; }
+.page-title { font-size:26px; font-weight:900; color:#1a2835; letter-spacing:-.4px; margin-top:1px; }
+
+/* ── MAIN CONTENT AREA ── */
+/* The ring SVG is absolutely positioned, large, centered on the left half,
+   and extends into the legend area — transparent/frosted where it overlaps */
+.content-area {
+  position: relative;
+  padding: 0;
+  animation: up .5s .07s ease both;
+}
+
+/* Big ring — absolutely positioned, centered slightly left */
+.ring-container {
+  position: absolute;
+  /* Center of ring: x=~110px from left, y=~100px from top of content-area */
+  left: 10px;
+  top: 5px;
+  width: 265px;
+  height: 265px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.ring-svg {
+  width: 265px;
+  height: 265px;
+  overflow: visible;
+}
+
+/* Frosted center disc */
+.disc {
+  position: absolute;
+  /* Center disc at center of ring = 155,155 in ring coords */
+  left: 132px;
+  top: 132px;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(240,244,248,0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 8px 32px rgba(160,180,200,.3),
+    0 0 0 1px rgba(255,255,255,.7) inset,
+    inset 0 2px 8px rgba(255,255,255,.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+.rc-unit  { font-size:11px; font-weight:700; color:#8a9eac; letter-spacing:.4px; }
+.rc-val   { font-size:38px; font-weight:900; color:#1a2835; line-height:1; letter-spacing:-1.5px; }
+.rc-label { font-size:8.5px; font-weight:800; color:#9aacb8; letter-spacing:1.6px; text-transform:uppercase; margin-top:3px; }
+
+/* Layout row: invisible ring placeholder left + legend right */
+.ring-legend-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 14px 18px 14px 0;
+  min-height: 240px;
+}
+
+/* Left side: empty space for ring */
+.ring-placeholder {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+/* Legend sits to the right, ON TOP of the ring (ring is behind, frosted) */
+.legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding-top: 8px;
+  position: relative;
+  z-index: 10;
+}
+
+.li { display:flex; align-items:flex-start; gap:9px; }
+.dot {
+  width:12px; height:12px; border-radius:50%;
+  flex-shrink:0; margin-top:2px;
+}
+.li-name {
+  font-size:12px; font-weight:800;
+  color:#1a2835; text-transform:uppercase;
+  letter-spacing:.5px; line-height:1.2;
+}
+.li-val {
+  font-size:11.5px; font-weight:600;
+  color:#7a8e9e; margin-top:1px; line-height:1.4;
+}
+.li-val.accent { color:#d08820; font-weight:700; }
+
+/* ── SUGGESTIONS ── */
+.sug {
+  margin: 4px 14px 0;
+  background: rgba(255,255,255,.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 22px;
+  padding: 14px 15px 12px;
+  box-shadow: 0 2px 18px rgba(0,0,0,.07), 0 0 0 1px rgba(255,255,255,.6) inset;
+  position: relative;
+  z-index: 10;
+  animation: up .5s .14s ease both;
+}
+.sug-title {
+  font-size:10.5px; font-weight:900; letter-spacing:.9px;
+  text-transform:uppercase; color:#1a2835; margin-bottom:10px;
+}
+.food-card {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 10px;
+  background:rgba(255,255,255,.92);
+  border-radius:14px; margin-bottom:7px;
+  box-shadow:0 1px 8px rgba(0,0,0,.05);
+  cursor:pointer; transition:transform .15s;
+}
+.food-card:last-child { margin-bottom:0; }
+.food-card:hover { transform:translateY(-1px); }
+.food-ico { width:38px; height:38px; border-radius:10px; font-size:22px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.food-name { font-size:12.5px; font-weight:700; color:#1a2835; }
+.food-sub  { font-size:11px; font-weight:600; color:#8fa0b0; margin-top:1px; }
+
+/* ── BOTTOM NAV with NOTCH ── */
+.nav-wrap {
+  position: relative;
+  margin-top: 10px;
+  animation: up .5s .2s ease both;
+}
+
+/* SVG notch shape */
+.nav-bg {
+  position: relative;
+  height: 72px;
+}
+
+/* The nav bar itself — using SVG clip path for notch */
+.nav-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  height: 72px;
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  /* Notch cut using clip-path */
+  clip-path: path('M0,0 L145,0 Q155,0 158,8 A28,28 0 0 0 217,8 Q220,0 230,0 L375,0 L375,72 L0,72 Z');
+  border-top: 1px solid rgba(255,255,255,.7);
+  box-shadow: 0 -2px 20px rgba(0,0,0,.06);
+}
+
+/* Nav items row */
+.nav-items {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 10px 10px;
+  z-index: 3;
+}
+
+.nv {
+  display:flex; flex-direction:column;
+  align-items:center; gap:3px;
+  cursor:pointer; min-width:52px;
+  transition:transform .15s;
+}
+.nv:hover { transform:translateY(-1px); }
+.nv svg {
+  width:23px; height:23px; fill:none;
+  stroke:#9aacb8; stroke-width:1.8;
+  stroke-linecap:round; stroke-linejoin:round; display:block;
+}
+.nv.active svg { stroke:#1a2835; }
+.nv.active .ic-home-fill { fill:#1a2835; stroke:#1a2835; }
+.nv-lbl { font-size:9.5px; font-weight:700; color:#9aacb8; }
+.nv.active .nv-lbl { color:#1a2835; }
+
+/* Spacer in middle for the + button */
+.nv-space { width: 64px; flex-shrink:0; }
+
+/* The + button floats ABOVE the notch */
+.nv-plus-wrap {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  z-index: 10;
+}
+
+.nv-plus {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #707c8a, #3a4550);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow:
+    0 6px 20px rgba(40,50,60,.38),
+    0 2px 6px rgba(40,50,60,.22),
+    0 0 0 1px rgba(255,255,255,.2) inset,
+    inset 0 2px 4px rgba(255,255,255,.18);
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s;
+}
+.nv-plus:hover {
+  transform: scale(1.1) translateY(-3px);
+  box-shadow: 0 10px 28px rgba(40,50,60,.42), 0 0 0 1px rgba(255,255,255,.22) inset;
+}
+.nv-plus:active { transform: scale(.93); }
+.nv-plus::before, .nv-plus::after {
+  content:''; position:absolute;
+  background: rgba(255,255,255,.92); border-radius:2px;
+}
+.nv-plus::before { width:2px; height:20px; }
+.nv-plus::after  { width:20px; height:2px; }
+
+@keyframes up { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="hamburger"><span></span><span></span><span></span></div>
+    <div class="hdr-center">
+      <div class="date-lbl">Dnešní 13. 2. 2024</div>
+      <div class="page-title">Dnešní přehled</div>
+    </div>
+    <div style="width:26px"></div>
+  </div>
+
+  <!-- CONTENT AREA with big ring -->
+  <div class="content-area">
+
+    <!-- Big ring absolutely positioned -->
+    <div class="ring-container">
+      <svg class="ring-svg" viewBox="0 0 310 310">
+        <defs>
+          <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f8c0d0"/>
+            <stop offset="100%" stop-color="#d84070"/>
+          </linearGradient>
+          <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#e88898"/>
+            <stop offset="100%" stop-color="#c03060"/>
+          </linearGradient>
+          <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#d8e4ee"/>
+            <stop offset="100%" stop-color="#98b8cc"/>
+          </linearGradient>
+          <linearGradient id="g4" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fad090"/>
+            <stop offset="100%" stop-color="#d08828"/>
+          </linearGradient>
+          <linearGradient id="g5" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#90d0f4"/>
+            <stop offset="100%" stop-color="#3898d8"/>
+          </linearGradient>
+          <filter id="sf">
+            <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="rgba(140,160,180,.28)"/>
+          </filter>
+        </defs>
+
+        <!--
+          Center of ring: 155,155
+          Radii: 140, 118, 96, 74, 52
+          Circumferences: 879.6, 741.4, 603.2, 465.1, 326.9
+
+          Arcs go 270° max (start at ~8 o'clock = rotate -135deg).
+          Arc length for 270° = C * 0.75
+          Progress = arc_len * pct
+
+          Sacharidy 80%:
+            arc_len=879.6*.75=659.7, progress=659.7*.80=527.8
+            dasharray=879.6, dashoffset=879.6-527.8=351.8
+
+          Bílkoviny 60%:
+            arc_len=741.4*.75=556.1, progress=556.1*.60=333.6
+            dasharray=741.4, dashoffset=741.4-333.6=407.8
+
+          Tuky 65%:
+            arc_len=603.2*.75=452.4, progress=452.4*.65=294.1
+            dasharray=603.2, dashoffset=603.2-294.1=309.1
+
+          Vláknina 30%:
+            arc_len=465.1*.75=348.8, progress=348.8*.30=104.6
+            dasharray=465.1, dashoffset=465.1-104.6=360.5
+
+          Voda 63%:
+            arc_len=326.9*.75=245.2, progress=245.2*.63=154.5
+            dasharray=326.9, dashoffset=326.9-154.5=172.4
+        -->
+
+        <g transform="rotate(90 155 155)" filter="url(#sf)">
+          <!-- BG tracks -->
+          <circle fill="none" cx="155" cy="155" r="140" stroke="rgba(200,215,228,.3)" stroke-width="22" stroke-linecap="round" stroke-dasharray="879.6" stroke-dashoffset="219.9"/>
+          <circle fill="none" cx="155" cy="155" r="118" stroke="rgba(200,215,228,.3)" stroke-width="22" stroke-linecap="round" stroke-dasharray="741.4" stroke-dashoffset="185.4"/>
+          <circle fill="none" cx="155" cy="155" r="96"  stroke="rgba(200,215,228,.3)" stroke-width="22" stroke-linecap="round" stroke-dasharray="603.2" stroke-dashoffset="150.8"/>
+          <circle fill="none" cx="155" cy="155" r="74"  stroke="rgba(200,215,228,.3)" stroke-width="22" stroke-linecap="round" stroke-dasharray="465.1" stroke-dashoffset="116.3"/>
+          <circle fill="none" cx="155" cy="155" r="52"  stroke="rgba(200,215,228,.3)" stroke-width="22" stroke-linecap="round" stroke-dasharray="326.9" stroke-dashoffset="81.7"/>
+
+          <!-- Colored arcs -->
+          <circle class="arc" data-target="351.8" fill="none" cx="155" cy="155" r="140" stroke="url(#g1)" stroke-width="22" stroke-linecap="round" stroke-dasharray="879.6" stroke-dashoffset="879.6"/>
+          <circle class="arc" data-target="407.8" fill="none" cx="155" cy="155" r="118" stroke="url(#g2)" stroke-width="22" stroke-linecap="round" stroke-dasharray="741.4" stroke-dashoffset="741.4"/>
+          <circle class="arc" data-target="309.1" fill="none" cx="155" cy="155" r="96"  stroke="url(#g3)" stroke-width="22" stroke-linecap="round" stroke-dasharray="603.2" stroke-dashoffset="603.2"/>
+          <circle class="arc" data-target="360.5" fill="none" cx="155" cy="155" r="74"  stroke="url(#g4)" stroke-width="22" stroke-linecap="round" stroke-dasharray="465.1" stroke-dashoffset="465.1"/>
+          <circle class="arc" data-target="172.4" fill="none" cx="155" cy="155" r="52"  stroke="url(#g5)" stroke-width="22" stroke-linecap="round" stroke-dasharray="326.9" stroke-dashoffset="326.9"/>
+          <!-- Start dots at 6h (right side in group coords = cx=155+r, cy=155) -->
+          <circle class="start-dot" cx="295" cy="155" r="9" fill="url(#g1)"/>
+          <circle class="start-dot" cx="273" cy="155" r="8" fill="url(#g2)"/>
+          <circle class="start-dot" cx="251" cy="155" r="7" fill="url(#g3)"/>
+          <circle class="start-dot" cx="229" cy="155" r="6" fill="url(#g4)"/>
+          <circle class="start-dot" cx="207" cy="155" r="5" fill="url(#g5)"/>
+        </g>
+      </svg>
+
+      <!-- Frosted center disc -->
+      <div class="disc">
+        <div class="rc-unit">kcal</div>
+        <div class="rc-val">2400</div>
+        <div class="rc-label">Denní cíl</div>
+      </div>
+    </div>
+
+    <!-- Layout row -->
+    <div class="ring-legend-row">
+      <div class="ring-placeholder"></div>
+      <div class="legend">
+        <div class="li">
+          <div class="dot" style="background:radial-gradient(circle at 35% 35%,#f4a0c0,#d04070);box-shadow:0 2px 8px rgba(208,64,112,.45)"></div>
+          <div>
+            <div class="li-name">Sacharidy</div>
+            <div class="li-val">Splněno 80%</div>
+          </div>
+        </div>
+        <div class="li">
+          <div class="dot" style="background:radial-gradient(circle at 35% 35%,#e080a0,#c03060);box-shadow:0 2px 8px rgba(192,48,96,.45)"></div>
+          <div>
+            <div class="li-name">Bílkoviny</div>
+            <div class="li-val">Zbývá 30g</div>
+          </div>
+        </div>
+        <div class="li">
+          <div class="dot" style="background:radial-gradient(circle at 35% 35%,#d8e8f4,#98b8cc);box-shadow:0 2px 8px rgba(152,184,204,.45)"></div>
+          <div>
+            <div class="li-name">Tuky</div>
+            <div class="li-val">Splněno 65%</div>
+          </div>
+        </div>
+        <div class="li">
+          <div class="dot" style="background:radial-gradient(circle at 35% 35%,#fad090,#d08828);box-shadow:0 2px 8px rgba(208,136,40,.45)"></div>
+          <div>
+            <div class="li-name">Vláknina<br><span style="color:#d08820">(Souhrn)</span></div>
+            <div class="li-val accent">Splněno 5g</div>
+          </div>
+        </div>
+        <div class="li">
+          <div class="dot" style="background:radial-gradient(circle at 35% 35%,#90d0f4,#3898d8);box-shadow:0 2px 8px rgba(56,152,216,.45)"></div>
+          <div>
+            <div class="li-name">Voda<br>(Tekutiny)</div>
+            <div class="li-val">Splněno 63%<br>Zbývá 750 ml</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUGGESTIONS -->
+  <div class="sug">
+    <div class="sug-title">Návrhy jídel na doplnění</div>
+    <div class="food-card">
+      <div class="food-ico" style="background:linear-gradient(135deg,#fad0a8,#e09060)">🍗</div>
+      <div>
+        <div class="food-name">Kuřecí prsa (bílkoviny): 150g</div>
+        <div class="food-sub">~248 kcal · protein 46g</div>
+      </div>
+    </div>
+    <div class="food-card">
+      <div class="food-ico" style="background:linear-gradient(135deg,#e8f4fc,#c8e0f0)">🥛</div>
+      <div>
+        <div class="food-name">Jogurt (bílkoviny): 200g</div>
+        <div class="food-sub">~130 kcal · protein 22g</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV WITH NOTCH -->
+  <div class="nav-wrap">
+    <div class="nav-bg">
+      <!-- Notch background bar -->
+      <div class="nav-bar"></div>
+
+      <!-- Nav items -->
+      <div class="nav-items">
+        <div class="nv active" onclick="setActive(this)">
+          <svg viewBox="0 0 24 24">
+            <path class="ic-home-fill" d="M3 11.5L12 4l9 7.5V20a1 1 0 01-1 1h-5v-5.5H9V21H4a1 1 0 01-1-1v-8.5z" fill="#1a2835" stroke="#1a2835"/>
+          </svg>
+          <span class="nv-lbl">Domů</span>
+        </div>
+
+        <div class="nv" onclick="setActive(this)">
+          <svg viewBox="0 0 24 24">
+            <line x1="8" y1="3" x2="8" y2="10"/>
+            <path d="M6 3v4a2 2 0 004 0V3"/>
+            <line x1="8" y1="12" x2="8" y2="21"/>
+            <path d="M17 3c0 0 2 2.5 2 6s-2 5-2 5v7"/>
+          </svg>
+          <span class="nv-lbl">Jídla</span>
+        </div>
+
+        <!-- Spacer for notch -->
+        <div class="nv-space"></div>
+
+        <div class="nv" onclick="setActive(this)">
+          <svg viewBox="0 0 24 24">
+            <path d="M8 21h8v-4H8v4z"/>
+            <line x1="6" y1="17" x2="18" y2="17"/>
+            <path d="M8 17V12a4 4 0 118 0v5"/>
+            <path d="M10 12a2 2 0 014 0"/>
+          </svg>
+          <span class="nv-lbl">Recepty</span>
+        </div>
+
+        <div class="nv" onclick="setActive(this)">
+          <svg viewBox="0 0 24 24">
+            <rect x="3"  y="14" width="4" height="7" rx="1"/>
+            <rect x="10" y="9"  width="4" height="12" rx="1"/>
+            <rect x="17" y="4"  width="4" height="17" rx="1"/>
+          </svg>
+          <span class="nv-lbl">Statistiky</span>
+        </div>
+      </div>
+
+      <!-- Floating + button above notch -->
+      <div class="nv-plus-wrap">
+        <div class="nv-plus" onclick="this.style.transform='scale(.92)';setTimeout(()=>this.style.transform='',160)"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function setActive(el) {
+  document.querySelectorAll('.nv').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+}
+
+window.addEventListener('load', () => {
+  const arcs = document.querySelectorAll('.arc');
+  setTimeout(() => {
+    arcs.forEach((arc, i) => {
+      arc.style.transition = `stroke-dashoffset 1.3s ${i * 0.13}s cubic-bezier(.4,0,.15,1)`;
+      arc.style.strokeDashoffset = arc.dataset.target;
+    });
+  }, 120);
+});
+</script>
+</body>
+</html>
