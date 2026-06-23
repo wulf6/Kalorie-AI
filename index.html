@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="cs">
 <head>
 <meta charset="UTF-8"/>
@@ -475,7 +475,7 @@ function parseCSVtoDB(text){
     const s=idx.sach>=0?parseFloat(vals[idx.sach])||0:0;
     const t=idx.tuky>=0?parseFloat(vals[idx.tuky])||0:0;
     const vl=idx.vlak>=0?parseFloat(vals[idx.vlak])||0:0;
-    if(kcal===0&&b===0&&s===0&&t===0) continue;
+    if(kcal===0&&b===0&&s===0&&t===0&&vl===0) continue;
     const key=nazev.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
     if(key) db[key]=[nazev,kcal,b,s,t,vl];
   }
@@ -1451,7 +1451,7 @@ let editorEditIdx = null;
 
 function renderSavedList(){
   const el=document.getElementById("saved-view-list"); if(!el)return;
-  const saved=ls("saved_foods",[]);
+  const saved=ls("saved_foods",[]).filter(f=>!f._del);
   if(!saved.length){ el.innerHTML=`<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Žádná vlastní jídla.</div>`; return; }
   el.innerHTML=saved.map((f,i)=>{
     const kcal=Math.round(f.kcal||f.k||0);
@@ -1471,7 +1471,7 @@ function renderSavedList(){
   }).join("");
 }
 function addSavedFood(idx){ const saved=ls("saved_foods",[]); const f=saved[idx]; if(!f)return; addEntry({...f,id:undefined,slot:activeSlot}); showOk(f.jidlo+" přidáno!"); setTimeout(closeAdd,1000); }
-function deleteSaved(idx){ const saved=ls("saved_foods",[]); saved.splice(idx,1); sv("saved_foods",saved); renderSavedList(); }
+function deleteSaved(idx){ const saved=ls("saved_foods",[]); saved[idx]={...saved[idx],_del:true,_t:Date.now()}; sv("saved_foods",saved); scheduleSync(); renderSavedList(); }
 function switchToFoodEditor(){ ["ai","manual","ean","saved"].forEach(k=>{const p=document.getElementById("panel-"+k);if(p)p.style.display="none";}); const pe=document.getElementById("panel-foodeditor"); if(pe)pe.style.display="flex"; }
 function showCreateFood(){ editorIngredients=[]; editorEditIdx=null; const n=document.getElementById("food-editor-name"); const t=document.getElementById("editor-title"); if(n)n.value=""; if(t)t.textContent="Nové jídlo"; renderEditorIngredients(); switchToFoodEditor(); }
 function editSavedFood(idx){ const saved=ls("saved_foods",[]); const f=saved[idx]; if(!f)return; editorEditIdx=idx; editorIngredients=f.slozky?[...f.slozky.map(i=>({...i,id:Date.now()+Math.random()}))]:[{id:Date.now(),j:f.jidlo,g:f.porce_g||100,k:f.kcal||0,b:f.b||0,s:f.s||0,t:f.t||0,vl:f.vl||0}]; const n=document.getElementById("food-editor-name"); const t=document.getElementById("editor-title"); if(n)n.value=f.jidlo; if(t)t.textContent="Upravit: "+f.jidlo; renderEditorIngredients(); switchToFoodEditor(); }
@@ -1798,9 +1798,13 @@ async function doSync(){
 
     if(serverData.receptar && serverData.receptar.length){
       const local = ls("saved_foods", []);
-      const names = new Set(local.map(f => f.jidlo));
-      const newF = serverData.receptar.filter(f => !names.has(f.jidlo));
-      if(newF.length) sv("saved_foods", [...local, ...newF]);
+      const localMap = new Map(local.map(f => [f.jidlo, f]));
+      for(const sf of serverData.receptar){
+        const loc = localMap.get(sf.jidlo);
+        if(!loc) localMap.set(sf.jidlo, sf);
+        else if((sf._t||0) > (loc._t||0)) localMap.set(sf.jidlo, sf);
+      }
+      sv("saved_foods", Array.from(localMap.values()));
     }
 
     if(serverData.history){ hist = {...hist, ...serverData.history}; sv("hist2", hist); }
