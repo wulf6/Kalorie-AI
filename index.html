@@ -1451,10 +1451,12 @@ let editorEditIdx = null;
 
 function renderSavedList(){
   const el=document.getElementById("saved-view-list"); if(!el)return;
-  const saved=ls("saved_foods",[]).filter(f=>!f._del);
+  const allSaved=ls("saved_foods",[]);
+  const saved=allSaved.map((f,realIdx)=>({...f,_realIdx:realIdx})).filter(f=>!f._del);
   if(!saved.length){ el.innerHTML=`<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Žádná vlastní jídla.</div>`; return; }
-  el.innerHTML=saved.map((f,i)=>{
+  el.innerHTML=saved.map((f)=>{
     const kcal=Math.round(f.kcal||f.k||0);
+    const ri=f._realIdx;
     return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="flex:1">
@@ -1462,9 +1464,9 @@ function renderSavedList(){
           <div style="font-size:11px;color:var(--muted);margin-top:2px">${f.porce_g||0}g · ${kcal} kcal</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
-          <button onclick="addSavedFood(${i})" style="padding:6px 12px;background:#6366f1;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-size:13px">+ Přidat</button>
-          <button onclick="editSavedFood(${i})" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-size:13px">✏️</button>
-          <button onclick="deleteSaved(${i})" style="padding:6px 10px;background:#fef2f2;border:none;border-radius:8px;color:#ef4444;cursor:pointer;font-size:13px">×</button>
+          <button onclick="addSavedFood(${ri})" style="padding:6px 12px;background:#6366f1;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-size:13px">+ Přidat</button>
+          <button onclick="editSavedFood(${ri})" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-size:13px">✏️</button>
+          <button onclick="deleteSaved(${ri})" style="padding:6px 10px;background:#fef2f2;border:none;border-radius:8px;color:#ef4444;cursor:pointer;font-size:13px">×</button>
         </div>
       </div>
     </div>`;
