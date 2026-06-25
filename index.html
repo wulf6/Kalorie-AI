@@ -1263,12 +1263,46 @@ function entryHTML(e){ if(e._del) return "";
           <button onclick="applyGram(${e.id})" style="padding:8px 14px;background:#6366f1;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-size:13px">OK</button>
         </div>
       </div>
+      ${e.slozky&&e.slozky.length?`<button onclick="editEntrySlozky(${e.id})" style="width:100%;padding:9px;background:transparent;border:1px solid #a5b4fc;border-radius:8px;color:#6366f1;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px">✏️ Upravit složení</button>`:""}
       <div style="display:flex;gap:8px">
         <button onclick="repeatEntry(${e.id})" style="flex:1;padding:8px;background:transparent;border:1px solid #bbf7d0;border-radius:8px;color:#16a34a;font-size:13px;cursor:pointer">🔁 Přidat znovu</button>
         <button onclick="removeEntry(${e.id})" style="flex:1;padding:8px;background:transparent;border:1px solid #fca5a5;border-radius:8px;color:#ef4444;font-size:13px;cursor:pointer">🗑 Odebrat</button>
       </div>
     </div>`:""}
   </div>`;
+}
+
+// ── Editace složení zapsaného jídla ──────────────────────────────────────────
+let _editingEntryId = null;
+function editEntrySlozky(id){
+  const e = entries.find(en => en.id === id);
+  if(!e) return;
+  _editingEntryId = id;
+  editorIngredients = e.slozky ? [...e.slozky.map(i=>({...i, id:Date.now()+Math.random()}))] : [];
+  editorEditIdx = null;
+  const n = document.getElementById("food-editor-name");
+  const t = document.getElementById("editor-title");
+  if(n) n.value = e.jidlo;
+  if(t) t.textContent = "Upravit: " + e.jidlo;
+  renderEditorIngredients();
+  document.getElementById("add-sheet").style.display = "flex";
+  switchToFoodEditor();
+  // Přepíšeme tlačítko Uložit aby aktualizovalo entry místo saved_foods
+  const saveBtn = document.querySelector("#panel-foodeditor button[onclick='saveFoodEditor()']");
+  if(saveBtn){ saveBtn.onclick = saveEntrySlozky; saveBtn.textContent = "💾 Uložit změny"; }
+  const addBtn = document.querySelector("#panel-foodeditor button[onclick='saveFoodEditorAndAdd()']");
+  if(addBtn) addBtn.style.display = "none";
+}
+function saveEntrySlozky(){
+  if(!_editingEntryId || !editorIngredients.length){ alert("Přidej složku."); return; }
+  const tot = editorIngredients.reduce((a,i)=>({k:a.k+i.k,b:a.b+i.b,s:a.s+i.s,t:a.t+i.t,vl:a.vl+(i.vl||0),g:a.g+i.g}),{k:0,b:0,s:0,t:0,vl:0,g:0});
+  entries = entries.map(e => e.id === _editingEntryId ? {...e, kcal:tot.k, b:tot.b, s:tot.s, t:tot.t, vl:tot.vl, porce_g:Math.round(tot.g), slozky:[...editorIngredients], _t:Date.now()} : e);
+  sv("ent_"+TODAY(), entries);
+  _editingEntryId = null;
+  editorIngredients = [];
+  closeAdd();
+  setToast("✅ Složení aktualizováno");
+  markDirty(); scheduleSync(); render();
 }
 
 // ── Quick Add z doporučení ────────────────────────────────────────────────────
