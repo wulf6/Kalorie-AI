@@ -738,6 +738,37 @@ function render(){
         <div onclick="showMacroDetail('Vláknina','fiber')" style="cursor:pointer">${ring(T.vl,tg.vlaknina,"#8b5cf6","Vláknina","g")}</div>
       </div>
       ${(()=>{
+        const macroTips = [];
+        const pct = (val,max) => max>0 ? val/max : 1;
+        const tips = [
+          {key:'b', label:'Bílkoviny', color:'#3b82f6', pct:pct(T.b,tg.protein), dbIdx:2, unit:'g bílk./100g'},
+          {key:'s', label:'Sacharidy', color:'#f59e0b', pct:pct(T.s,tg.sacharidy), dbIdx:3, unit:'g sach./100g'},
+          {key:'t', label:'Tuky',      color:'#10b981', pct:pct(T.t,tg.tuky),     dbIdx:4, unit:'g tuk/100g'},
+          {key:'vl',label:'Vláknina', color:'#8b5cf6', pct:pct(T.vl,tg.vlaknina),dbIdx:5, unit:'g vlákn./100g'},
+        ].filter(m => m.pct < 0.5);
+        if(!tips.length || Object.keys(FOOD_DB).length < 10) return '';
+        let html = '<div class="card" style="padding:14px;margin-bottom:12px">';
+        html += '<div style="font-weight:700;font-size:12px;color:var(--muted);letter-spacing:.05em;margin-bottom:10px">💡 DOPLNIT DO CÍLE</div>';
+        tips.forEach(m => {
+          const top = Object.values(FOOD_DB)
+            .filter(e => (e[m.dbIdx]||0) > 2)
+            .sort((a,b) => (b[m.dbIdx]||0)-(a[m.dbIdx]||0))
+            .slice(0,4);
+          if(!top.length) return;
+          html += `<div style="margin-bottom:10px">
+            <div style="font-size:11px;font-weight:700;color:${m.color};margin-bottom:6px">${m.label} — zbývá ${Math.round(m.pct<1?(m.key==='b'?tg.protein:m.key==='s'?tg.sacharidy:m.key==='t'?tg.tuky:tg.vlaknina)-( m.key==='b'?T.b:m.key==='s'?T.s:m.key==='t'?T.t:T.vl):0)}g</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">`;
+          top.forEach(e => {
+            const name = e[0];
+            const val = Math.round(e[m.dbIdx]||0);
+            html += `<button onclick="openQuickAdd('${name.replace(/'/g,"\\'")}',${e[1]},${e[2]},${e[3]},${e[4]},${e[5]||0})" style="padding:6px 11px;background:var(--surface);border:1px solid ${m.color}33;border-radius:20px;font-size:12px;cursor:pointer;color:var(--text);display:flex;align-items:center;gap:4px"><span>${name}</span><span style="color:${m.color};font-weight:700;font-size:11px">${val}g</span></button>`;
+          });
+          html += '</div></div>';
+        });
+        html += '</div>';
+        return html;
+      })()}
+      ${(()=>{
         const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
         const yd = hist[yesterday]||[];
         if(!yd.length) return '';
@@ -1238,6 +1269,38 @@ function entryHTML(e){ if(e._del) return "";
       </div>
     </div>`:""}
   </div>`;
+}
+
+// ── Quick Add z doporučení ────────────────────────────────────────────────────
+let _quickAddEntry = null;
+function openQuickAdd(name, kcal100, b100, s100, t100, vl100){
+  _quickAddEntry = [name, kcal100, b100, s100, t100, vl100];
+  const modal = document.getElementById("quick-add-modal");
+  if(!modal) return;
+  document.getElementById("qa-name").textContent = name;
+  document.getElementById("qa-g").value = getTypicalGrams(name);
+  updateQaPreview();
+  modal.style.display = "flex";
+  setTimeout(()=>{ const i=document.getElementById("qa-g"); if(i){i.focus();i.select();} },100);
+}
+function closeQuickAdd(){ document.getElementById("quick-add-modal").style.display="none"; _quickAddEntry=null; }
+function updateQaPreview(){
+  if(!_quickAddEntry) return;
+  const g = parseFloat(document.getElementById("qa-g").value)||100;
+  const r = g/100;
+  const [name,k,b,s,t,vl] = _quickAddEntry;
+  document.getElementById("qa-preview").textContent =
+    Math.round(k*r)+" kcal · B:"+( b*r).toFixed(1)+" S:"+(s*r).toFixed(1)+" T:"+(t*r).toFixed(1)+" Vl:"+(vl*r).toFixed(1)+"g";
+}
+function saveQuickAdd(){
+  if(!_quickAddEntry) return;
+  const g = parseFloat(document.getElementById("qa-g").value)||100;
+  const r = g/100;
+  const [name,k,b,s,t,vl] = _quickAddEntry;
+  const slot = document.getElementById("qa-slot")?.value || activeSlot;
+  addEntry({jidlo:name, porce_g:g, kcal:k*r, b:b*r, s:s*r, t:t*r, vl:vl*r, isWater:isLiquid(name), source:"manual", slot});
+  closeQuickAdd();
+  setToast("✅ "+name+" přidáno");
 }
 
 // ── Rychlé akce z hlavní obrazovky ───────────────────────────────────────────
@@ -2206,6 +2269,27 @@ function downloadReport(){
   URL.revokeObjectURL(url); setToast("✓ Staženo!");
 }
 </script>
+
+<!-- QUICK ADD MODAL -->
+<div id="quick-add-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:400;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeQuickAdd()">
+  <div style="width:100%;max-width:360px;background:var(--card);border-radius:20px;padding:24px;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span id="qa-name" style="font-size:16px;font-weight:800;color:var(--text)"></span>
+      <button onclick="closeQuickAdd()" style="background:var(--surface);border:none;border-radius:8px;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 10px">×</button>
+    </div>
+    <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;display:block;margin-bottom:6px">SLOT</label>
+    <select id="qa-slot" class="inp" style="margin-bottom:12px">
+      <option>Snídaně</option><option>Svačina</option><option selected>Oběd</option><option>Svačina 2</option><option>Večeře</option>
+    </select>
+    <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;display:block;margin-bottom:6px">MNOŽSTVÍ (g/ml)</label>
+    <input id="qa-g" class="inp" type="number" min="1" max="9999" style="font-size:22px;font-weight:800;text-align:center;margin-bottom:10px" oninput="updateQaPreview()" onkeydown="if(event.key==='Enter')saveQuickAdd()"/>
+    <div id="qa-preview" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;padding:8px;background:var(--surface);border-radius:8px"></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveQuickAdd()" style="flex:1;padding:13px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:14px;cursor:pointer">✅ Přidat</button>
+      <button onclick="closeQuickAdd()" style="padding:13px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-weight:600;cursor:pointer">Zavřít</button>
+    </div>
+  </div>
+</div>
 
 <!-- REPORT MODAL -->
 <div id="report-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeReport()">
