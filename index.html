@@ -738,30 +738,46 @@ function render(){
         <div onclick="showMacroDetail('Vláknina','fiber')" style="cursor:pointer">${ring(T.vl,tg.vlaknina,"#8b5cf6","Vláknina","g")}</div>
       </div>
       ${(()=>{
-        const macroTips = [];
         const pct = (val,max) => max>0 ? val/max : 1;
         const tips = [
-          {key:'b', label:'Bílkoviny', color:'#3b82f6', pct:pct(T.b,tg.protein), dbIdx:2, unit:'g bílk./100g'},
-          {key:'s', label:'Sacharidy', color:'#f59e0b', pct:pct(T.s,tg.sacharidy), dbIdx:3, unit:'g sach./100g'},
-          {key:'t', label:'Tuky',      color:'#10b981', pct:pct(T.t,tg.tuky),     dbIdx:4, unit:'g tuk/100g'},
-          {key:'vl',label:'Vláknina', color:'#8b5cf6', pct:pct(T.vl,tg.vlaknina),dbIdx:5, unit:'g vlákn./100g'},
+          {key:'b', label:'Bílkoviny', color:'#3b82f6', pct:pct(T.b,tg.protein),   dbIdx:2, rem:Math.max(0,Math.round(tg.protein-T.b))},
+          {key:'s', label:'Sacharidy', color:'#f59e0b', pct:pct(T.s,tg.sacharidy), dbIdx:3, rem:Math.max(0,Math.round(tg.sacharidy-T.s))},
+          {key:'t', label:'Tuky',      color:'#10b981', pct:pct(T.t,tg.tuky),      dbIdx:4, rem:Math.max(0,Math.round(tg.tuky-T.t))},
+          {key:'vl',label:'Vláknina', color:'#8b5cf6', pct:pct(T.vl,tg.vlaknina), dbIdx:5, rem:Math.max(0,Math.round(tg.vlaknina-T.vl))},
         ].filter(m => m.pct < 0.5);
         if(!tips.length || Object.keys(FOOD_DB).length < 10) return '';
+        // Blacklist slov která jsou superpotraviny/doplňky s nerealisticky vysokými hodnotami
+        const blacklist = ['kolagen','hydrolyz','collagen','protein powder','whey','isolat','kazein','bcaa','kreatin','doplněk'];
+        const isBlacklisted = name => blacklist.some(b => name.toLowerCase().includes(b));
         let html = '<div class="card" style="padding:14px;margin-bottom:12px">';
         html += '<div style="font-weight:700;font-size:12px;color:var(--muted);letter-spacing:.05em;margin-bottom:10px">💡 DOPLNIT DO CÍLE</div>';
         tips.forEach(m => {
-          const top = Object.values(FOOD_DB)
-            .filter(e => (e[m.dbIdx]||0) > 2)
-            .sort((a,b) => (b[m.dbIdx]||0)-(a[m.dbIdx]||0))
-            .slice(0,4);
+          // Seřaď podle obsahu makra v typické porci (ne na 100g) — realističtější
+          const candidates = Object.values(FOOD_DB)
+            .filter(e => (e[m.dbIdx]||0) > 1 && !isBlacklisted(e[0]))
+            .map(e => {
+              const g = getTypicalGrams(e[0]);
+              const macroInPorce = (e[m.dbIdx]||0) * g / 100;
+              return {e, g, macroInPorce};
+            })
+            .filter(x => x.macroInPorce > 1)
+            .sort((a,b) => b.macroInPorce - a.macroInPorce);
+          // Vyber max 5 různorodých — max 1 ze stejného "prefixu" (první 4 znaky klíče)
+          const seen = new Set();
+          const top = [];
+          for(const c of candidates){
+            const prefix = c.e[0].toLowerCase().slice(0,5);
+            if(!seen.has(prefix)){ seen.add(prefix); top.push(c); }
+            if(top.length >= 5) break;
+          }
           if(!top.length) return;
           html += `<div style="margin-bottom:10px">
-            <div style="font-size:11px;font-weight:700;color:${m.color};margin-bottom:6px">${m.label} — zbývá ${Math.round(m.pct<1?(m.key==='b'?tg.protein:m.key==='s'?tg.sacharidy:m.key==='t'?tg.tuky:tg.vlaknina)-( m.key==='b'?T.b:m.key==='s'?T.s:m.key==='t'?T.t:T.vl):0)}g</div>
+            <div style="font-size:11px;font-weight:700;color:${m.color};margin-bottom:6px">${m.label} — zbývá ${m.rem}g</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px">`;
-          top.forEach(e => {
+          top.forEach(({e, g, macroInPorce}) => {
             const name = e[0];
-            const val = Math.round(e[m.dbIdx]||0);
-            html += `<button onclick="openQuickAdd('${name.replace(/'/g,"\\'")}',${e[1]},${e[2]},${e[3]},${e[4]},${e[5]||0})" style="padding:6px 11px;background:var(--surface);border:1px solid ${m.color}33;border-radius:20px;font-size:12px;cursor:pointer;color:var(--text);display:flex;align-items:center;gap:4px"><span>${name}</span><span style="color:${m.color};font-weight:700;font-size:11px">${val}g</span></button>`;
+            const val = Math.round(macroInPorce);
+            html += `<button onclick="openQuickAdd('${name.replace(/'/g,"\\'")}',${e[1]},${e[2]},${e[3]},${e[4]},${e[5]||0})" style="padding:6px 11px;background:var(--surface);border:1px solid ${m.color}33;border-radius:20px;font-size:12px;cursor:pointer;color:var(--text);display:flex;align-items:center;gap:5px;max-width:200px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span><span style="color:${m.color};font-weight:700;font-size:11px;flex-shrink:0">${val}g</span></button>`;
           });
           html += '</div></div>';
         });
