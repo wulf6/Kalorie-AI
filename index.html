@@ -1213,7 +1213,7 @@ function entryHTML(e){ if(e._del) return "";
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.jidlo}</div>
         <div style="font-size:11px;color:var(--muted)">${e.porce_g}${(e.isWater||isLiquid(e.jidlo))?"ml":"g"} · ${e.slot}</div>
-        ${e.b?`<div style="font-size:11px;color:var(--muted)">B:${(e.b).toFixed(1)} S:${(e.s).toFixed(1)} T:${(e.t).toFixed(1)}</div>`:""}
+        ${(e.b||e.s||e.t||e.vl)?`<div style="font-size:11px;color:var(--muted)">B:${(e.b||0).toFixed(1)} S:${(e.s||0).toFixed(1)} T:${(e.t||0).toFixed(1)}${e.vl?` Vl:${(e.vl).toFixed(1)}`:""}g</div>`:""}
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-size:18px;font-weight:800;color:#f97316">${Math.round(e.kcal)}</div>
@@ -1482,8 +1482,8 @@ function renderEditorIngredients(){
   const el=document.getElementById("editor-ingredients"); if(!el)return;
   if(!editorIngredients.length){ el.innerHTML=`<div style="color:var(--muted);font-size:12px;padding:8px 0">Zatím žádné složky</div>`; }
   else { el.innerHTML=editorIngredients.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--surface);border-radius:10px;border:1px solid var(--border)"><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">${i.j}</div><div style="color:var(--muted);font-size:11px">${i.g}g · ${Math.round(i.k)} kcal</div></div><button onclick="removeEditorIng('${i.id}')" style="background:#fef2f2;border:none;color:#ef4444;font-size:15px;cursor:pointer;padding:5px 10px;border-radius:8px;margin-left:8px">×</button></div>`).join(""); }
-  const tot=editorIngredients.reduce((a,i)=>({k:a.k+i.k,b:a.b+i.b,s:a.s+i.s,t:a.t+i.t}),{k:0,b:0,s:0,t:0});
-  const tel=document.getElementById("editor-totals"); if(tel)tel.innerHTML=`<b style="color:#f97316">${Math.round(tot.k)} kcal</b> · B:${tot.b.toFixed(1)} S:${tot.s.toFixed(1)} T:${tot.t.toFixed(1)}g`;
+  const tot=editorIngredients.reduce((a,i)=>({k:a.k+i.k,b:a.b+i.b,s:a.s+i.s,t:a.t+i.t,vl:a.vl+(i.vl||0)}),{k:0,b:0,s:0,t:0,vl:0});
+  const tel=document.getElementById("editor-totals"); if(tel)tel.innerHTML=`<b style="color:#f97316">${Math.round(tot.k)} kcal</b> · B:${tot.b.toFixed(1)} S:${tot.s.toFixed(1)} T:${tot.t.toFixed(1)} Vl:${tot.vl.toFixed(1)}g`;
 }
 function removeEditorIng(id){ editorIngredients=editorIngredients.filter(i=>String(i.id)!==String(id)); renderEditorIngredients(); }
 function onEditorIngInput(){ const inp=document.getElementById("editor-ing-name"); const q=normKey(inp.value); if(q.length<2){hideGlobalSuggest();return;} const matches=Object.entries(FOOD_DB).filter(([k])=>k.includes(q)).slice(0,8).map(([,e])=>e); showGlobalSuggest(inp,matches,(entry)=>{document.getElementById("editor-ing-name").value=entry[0]; document.getElementById("editor-ing-g").value=isLiquid(entry[0])?250:100; hideGlobalSuggest();}); }
