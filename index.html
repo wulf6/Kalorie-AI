@@ -579,16 +579,35 @@ function totals(){
 }
 
 function ring(value, max, color, label, unit, big=false){
-  const r=big?42:34, circ=2*Math.PI*r, pct=Math.min(value/(max||1),1), over=value>max;
-  const col = over ? "#ef4444" : color;
+  const r=big?42:34, circ=2*Math.PI*r, pct=Math.min(value/(max||1),1);
+  const tol = 0.10; // ±10% tolerance
+  const inTolerance = value >= max*(1-tol) && value <= max*(1+tol);
+  const over = value > max*(1+tol);
+  const under = value < max*(1-tol);
+  // Barva: zelená v toleranci, původní pod, červená přes
+  const col = over ? "#ef4444" : inTolerance ? "#22c55e" : color;
   const rem = Math.max(Math.round(max-value),0);
   const sz = big?92:76;
+  const sw = big?9:7;
   const valStr = big ? (value>=1000?Math.round(value/10)*10:Math.round(value)).toString() : Math.round(value).toString();
+  // Toleranční pásmo: oblouk od 90% do 110% cíle
+  const tolStart = Math.min(0.9, 1) * circ;
+  const tolEnd = Math.min(1.1, 1) * circ; // max 100% vizuálně
+  const tolPct = Math.min(0.9, pct < 0.9 ? 0.9 : 1.0);
+  // Značka tolerančního pásma — tenký zelený oblouk od 90% do 100%
+  const tolMarkStart = 0.9 * circ;
+  const tolMarkLen = 0.1 * circ; // od 90% do 100%
+  const statusText = over ? "+"+Math.round(value-max*(1+tol))+" přes" : inTolerance ? "✓ V cíli" : rem+" zbývá";
+  const statusCol = over ? "#ef4444" : inTolerance ? "#22c55e" : "#f59e0b";
   return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
     <div style="position:relative;width:${sz}px;height:${sz}px">
       <svg width="${sz}" height="${sz}" style="transform:rotate(-90deg)">
-        <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${big?9:7}"/>
-        <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="${col}" stroke-width="${big?9:7}"
+        <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${sw}"/>
+        <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="#22c55e" stroke-width="${sw}"
+          stroke-dasharray="${tolMarkLen} ${circ-tolMarkLen}"
+          stroke-dashoffset="${-tolMarkStart}"
+          opacity="0.25"/>
+        <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="${col}" stroke-width="${sw}"
           stroke-dasharray="${pct*circ} ${circ}" stroke-linecap="round"
           style="transition:stroke-dasharray .5s ease"/>
       </svg>
@@ -598,7 +617,7 @@ function ring(value, max, color, label, unit, big=false){
       </div>
     </div>
     <span style="font-size:${big?10:9}px;font-weight:700;color:var(--muted)">${label}</span>
-    <span style="font-size:9px;color:${over?"#ef4444":"#22c55e"}">${over?"+"+Math.round(value-max)+" přes":rem+" zbývá"}</span>
+    <span style="font-size:9px;color:${statusCol}">${statusText}</span>
   </div>`;
 }
 
