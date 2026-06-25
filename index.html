@@ -482,7 +482,7 @@ function parseCSVtoDB(text){
   return db;
 }
 
-const SLOTS = ["Snídaně","Svačina","Oběd","Svačina 2","Večeře"];
+const SLOTS = ["Snídaně","Svačina","Oběd","Svačina 2","Večeře","Druhá večeře"];
 const GEMINI_PROMPT = `Odpověz POUZE tímto JSON formátem bez jakéhokoli dalšího textu nebo markdown:
 {"jidlo":"Název česky","porce_g":100,"kcal":100,"b":10,"s":10,"t":5,"vl":2}
 Doplň reálné hodnoty pro zadané jídlo. Vždy vrať validní JSON.`;
@@ -2329,7 +2329,7 @@ function downloadReport(){
     </div>
     <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;display:block;margin-bottom:6px">SLOT</label>
     <select id="qa-slot" class="inp" style="margin-bottom:12px">
-      <option>Snídaně</option><option>Svačina</option><option selected>Oběd</option><option>Svačina 2</option><option>Večeře</option>
+      <option>Snídaně</option><option>Svačina</option><option selected>Oběd</option><option>Svačina 2</option><option>Večeře</option><option>Druhá večeře</option>
     </select>
     <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;display:block;margin-bottom:6px">MNOŽSTVÍ (g/ml)</label>
     <input id="qa-g" class="inp" type="number" min="1" max="9999" style="font-size:22px;font-weight:800;text-align:center;margin-bottom:10px" oninput="updateQaPreview()" onkeydown="if(event.key==='Enter')saveQuickAdd()"/>
